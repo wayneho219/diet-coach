@@ -48,7 +48,7 @@ const W = globalThis.Welcome;
 const fakeCfg = (onboarded, key) => ({ get: () => ({ onboarded }), hasKey: () => key });
 assert.strictEqual(W.shouldShow(fakeCfg(false, false)), true);
 assert.strictEqual(W.shouldShow(fakeCfg(true, false)), false);
-assert.strictEqual(W.shouldShow(fakeCfg(false, true)), false);
+assert.strictEqual(W.shouldShow(fakeCfg(false, true)), true);   // 有金鑰但沒走完設定，還是要填
 assert.strictEqual(W.errorText({ code: 'bad_key' }), '金鑰無效或沒有權限，檢查一下金鑰。');
 assert.ok(W.errorText({ code: 'upstream_error', status: 400, detail: 'credit balance is too low' }).includes('HTTP 400：credit balance is too low'));
 assert.ok(W.errorText({ code: 'upstream_error', network: true }).includes('請求沒送出去'));

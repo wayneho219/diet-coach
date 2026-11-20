@@ -65,6 +65,7 @@
     const reset = () => { y0 = null; handle = false; s.classList.remove('dragging'); s.style.transform = ''; };
     // 從標題列（data-drag）拉，不管內容捲到哪都能關；其他地方要捲到最上面才算
     s.addEventListener('touchstart', e => {
+      if (sheetLocked) { y0 = null; return; }
       handle = !!e.target.closest?.('[data-drag]');
       y0 = handle || s.scrollTop <= 0 ? e.touches[0].clientY : null; dy = 0;
     }, { passive: true });
@@ -93,22 +94,25 @@
     s.addEventListener('touchcancel', reset);
   }
 
-  let onCloseCb = null;
+  let onCloseCb = null, sheetLocked = false;   // locked：第一次設定時不能點背景、按 Esc 或下滑關掉
   const sheet = {
-    open(node, { onClose } = {}) {
+    open(node, { onClose, locked = false } = {}) {
+      if (sheetLocked) return;   // 鎖住的面板還沒完成，不讓別的面板蓋過去
       bindDrag();
       if (sheet.isOpen) sheet.close();
       $('sheet').style.transform = '';
       $('sheet-backdrop').classList.remove('fading');
       onCloseCb = onClose || null;
-      $('sheet').replaceChildren(el('div', { class: 'sheet-grip', 'aria-hidden': 'true' }), node);
+      sheetLocked = locked;
+      $('sheet').replaceChildren(el('div', { class: 'sheet-grip', 'aria-hidden': 'true', hidden: locked }), node);
       $('sheet').hidden = false;
       $('sheet-backdrop').hidden = false;
       document.body.classList.add('locked');
       $('sheet').scrollTop = 0;
     },
-    close() {
-      if (!sheet.isOpen) return;
+    close({ force = false } = {}) {
+      if (!sheet.isOpen || (sheetLocked && !force)) return;
+      sheetLocked = false;
       $('sheet').hidden = true;
       $('sheet-backdrop').hidden = true;
       document.body.classList.remove('locked');

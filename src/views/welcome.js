@@ -21,15 +21,14 @@
   // 用目前的設定送一句很短的請求
   const ping = () => root.LocalAI.create({ getConfig: () => root.Config.current(), fetch: (...a) => fetch(...a) })('回覆 OK 兩個字');
 
-  const shouldShow = cfg => !cfg.get().onboarded && !cfg.hasKey();
+  // 基本資料和 AI 金鑰都是必填，兩步都完成才算設定好
+  const shouldShow = cfg => !cfg.get().onboarded;
 
   // 第 1 步：基本資料與目標，即時算出建議熱量；第 2 步：AI 服務與金鑰。同一個面板換內容
   function open() {
     const { el, sheet } = root.UI;
     const body = el('div', { class: 'sheet-body' });
-    sheet.open(body,
-      // 不管是存好、按跳過、還是滑掉，都算看過了，之後不再自動跳出
-      { onClose: () => { root.Config.save({ onboarded: true }); root.App.reinitAI(); } });
+    sheet.open(body, { locked: true });   // 兩步都完成前關不掉
     profileStep(body);
   }
 
@@ -87,11 +86,12 @@
       el('label', { class: 'field' }, '平常活動量', activity),
       el('label', { class: 'field' }, '目標', goal),
       targetBox, summary,
-      el('button', { class: 'btn btn-primary btn-block', onclick: next }, '下一步'),
-      el('button', { class: 'btn btn-ghost btn-block', onclick: () => aiStep(body) }, '之後再填'));
+      el('button', { class: 'btn btn-primary btn-block', onclick: next }, '下一步'));
   }
 
   function aiStep(body) {
+    // 上一步：回去改基本資料
+    const back = () => profileStep(body);
     const { el, sheet, toast } = root.UI, Cfg = root.Config, P = root.LocalAI.PROVIDERS;
     const c = Cfg.get();
     const provider = el('select', {}, Object.entries(P).map(([k, v]) => el('option', { value: k, selected: k === c.provider }, v.label)));
@@ -112,7 +112,9 @@
         const cur = Cfg.current().model, m = root.LocalAI.pickModel(ids, cur, p);
         if (m !== cur) Cfg.save({ model: { [p]: m } });
         await ping();
-        sheet.close();
+        Cfg.save({ onboarded: true });
+        root.App.reinitAI();
+        sheet.close({ force: true });
         toast('✓ 連線成功，可以開始用了。');
       } catch (e) {
         msg.textContent = errorText(e); msg.hidden = false;
@@ -125,7 +127,7 @@
       el('label', { class: 'field' }, '服務', provider),
       el('label', { class: 'field' }, '金鑰', key),
       link, msg, go,
-      el('button', { class: 'btn btn-ghost btn-block', onclick: () => sheet.close() }, '先跳過，只手動記錄'),
+      root.UI.el('button', { class: 'btn btn-ghost btn-block', onclick: back }, '上一步'),
       el('p', { class: 'hint' }, '照片和文字會傳給你選的 AI 服務。'),
       el('p', { class: 'hint' }, 'API 費用由你自己負擔。'),
       el('p', { class: 'hint' }, 'iPhone 請用 Safari「加入主畫面」打開，資料才不會被清除。'),
