@@ -41,6 +41,7 @@ for (const page of ['index.html']) {
   const order = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map(m => m[1]);
   assert.deepStrictEqual(order, want, page);
   for (const f of order) assert.ok(fs.existsSync(path.join(ROOT, f)), `${page} 引用的 ${f} 不存在`);
+  assert.ok(/^<!doctype html>/i.test(html) && html.includes('<meta charset="utf-8">') && html.includes('<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'), page + ' 缺 doctype／charset／viewport');
   assert.ok(html.includes('id="chat-fab"') && html.includes('href="style.css"'), page);
 }
 const ling = require('../src/profile.js');

@@ -75,7 +75,8 @@
         const head = prefix + 'data/', docs = {};
         for (let i = 0; i < storage.length; i++) {
           const k = storage.key(i);
-          if (k && k.startsWith(head)) docs[k.slice(prefix.length)] = JSON.parse(storage.getItem(k));
+          if (!k || !k.startsWith(head)) continue;
+          try { docs[k.slice(prefix.length)] = JSON.parse(storage.getItem(k)); } catch (_) { /* 壞掉的項目略過，不拖累整份匯出 */ }
         }
         return { app: 'diet-coach', version: 1, docs };
       },

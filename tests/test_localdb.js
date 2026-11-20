@@ -73,6 +73,11 @@ const next = (ref) => new Promise((res, rej) => ref.onSnapshot(res, rej));
   assert.deepStrictEqual(db2.exportAll(), dump);
   st2.removeItem('diet-coach:config');
 
+  // 壞掉的 JSON 項目略過，不影響其他文件
+  st2.setItem('diet-coach:data/users/local/broken', '{oops');
+  assert.deepStrictEqual(db2.exportAll(), dump);
+  st2.removeItem('diet-coach:data/users/local/broken');
+
   // 驗證失敗不改資料
   const before = JSON.stringify(db2.exportAll());
   for (const bad of [{ app: 'other', version: 1, docs: {} }, { app: 'diet-coach', version: 2, docs: {} }, null, { app: 'diet-coach', version: 1, docs: { 'data/x/y': 'str' } }]) {

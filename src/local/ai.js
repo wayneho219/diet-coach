@@ -32,6 +32,7 @@
         };
       },
       pick(e) {
+        if (e.type === 'error') return { error: true };
         if (e.type === 'content_block_delta') return { delta: e.delta && e.delta.text };
         if (e.type === 'message_delta') return { stop: e.delta && e.delta.stop_reason === 'max_tokens' };
         return {};
@@ -52,6 +53,7 @@
         };
       },
       pick(e) {
+        if (e.error) return { error: true };
         const c = e.choices && e.choices[0];
         return c ? { delta: c.delta && c.delta.content, stop: c.finish_reason === 'length' } : {};
       },
@@ -71,6 +73,7 @@
         };
       },
       pick(e) {
+        if (e.error) return { error: true };
         const c = e.candidates && e.candidates[0];
         if (!c) return {};
         const parts = (c.content && c.content.parts) || [];
@@ -122,7 +125,8 @@
           const d = l.slice(5).trim();
           if (!d || d === '[DONE]') return;
           let evt; try { evt = JSON.parse(d); } catch (_) { return; }
-          const { delta, stop } = ad.pick(evt);
+          const { delta, stop, error } = ad.pick(evt);
+          if (error) throw err('upstream_error');
           if (stop) truncated = true;
           if (delta) { text += delta; if (opts.onText) opts.onText({ text }); }
         };

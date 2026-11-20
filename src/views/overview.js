@@ -27,22 +27,32 @@
     rate_limited: 'AI 的用量暫時到上限，等一下再試。',
     not_granted: '還沒填金鑰。',
   };
+  // 沒按儲存的輸入與展開狀態：頁面重繪（切回分頁、資料更新）時不能被洗掉
+  let draft = null, detailsOpen = null;
   function settingsCard() {
     const { el, toast, confirmTap } = root.UI, Cfg = root.Config, App = root.App, P = root.LocalAI.PROVIDERS;
     const c = Cfg.get();
-    const provider = el('select', {}, Object.entries(P).map(([k, v]) => el('option', { value: k, selected: k === c.provider }, v.label)));
-    const key = el('input', { type: 'password', autocomplete: 'off', value: c.keys[c.provider], placeholder: '貼上 API 金鑰' });
-    const model = el('input', { type: 'text', autocomplete: 'off', value: c.model[c.provider] });
-    const name = el('input', { type: 'text', value: c.coachName });
-    // 切換服務時，金鑰和模型欄換成那家的值（沒按儲存的修改不保留）
+    if (!draft) draft = { provider: c.provider, key: c.keys[c.provider], model: c.model[c.provider], coachName: c.coachName, typed: {} };
+    const provider = el('select', {}, Object.entries(P).map(([k, v]) => el('option', { value: k, selected: k === draft.provider }, v.label)));
+    const key = el('input', { type: 'password', autocomplete: 'off', value: draft.key, placeholder: '貼上 API 金鑰' });
+    const model = el('input', { type: 'text', autocomplete: 'off', value: draft.model });
+    const name = el('input', { type: 'text', value: draft.coachName });
+    // 每次輸入都記進 draft；切換服務時，金鑰和模型欄換成那家打過的值，沒打過就用已儲存的
+    const sync = () => {
+      draft.provider = provider.value; draft.key = key.value; draft.model = model.value; draft.coachName = name.value;
+      draft.typed[draft.provider] = { key: key.value, model: model.value };
+    };
+    [key, model, name].forEach(i => i.addEventListener('input', sync));
     provider.addEventListener('change', () => {
-      const g = Cfg.get();
-      key.value = g.keys[provider.value]; model.value = g.model[provider.value];
+      const g = Cfg.get(), p = provider.value, t = draft.typed[p];
+      key.value = t ? t.key : g.keys[p]; model.value = t ? t.model : g.model[p];
+      sync();
     });
     const save = () => {
       const p = provider.value;
       Cfg.save({ provider: p, keys: { [p]: key.value.trim() }, model: { [p]: model.value.trim() }, coachName: name.value.trim() });
       App.reinitAI();
+      draft = null;
     };
     const test = async () => {
       save();
@@ -75,7 +85,7 @@
       toast('選好備份了。按下方按鈕會取代目前所有紀錄。');
     });
     const pickBtn = el('button', { class: 'btn btn-soft', onclick: () => file.click() }, '匯入備份');
-    return el('details', { class: 'card', open: !Cfg.hasKey() },
+    const det = el('details', { class: 'card', open: detailsOpen ?? !Cfg.hasKey() },
       el('summary', { class: 'card-title' }, '⚙️ AI 設定'),
       el('div', { class: 'grid2' },
         el('label', { class: 'field' }, '服務', provider),
@@ -89,6 +99,8 @@
       el('p', { class: 'hint' }, '照片和文字會傳給你選的 AI 服務。'),
       el('p', { class: 'hint' }, 'API 費用由你自己負擔。'),
       el('p', { class: 'hint' }, 'iPhone 請用 Safari「加入主畫面」打開，資料才不會被清除。'));
+    det.addEventListener('toggle', () => { detailsOpen = det.open; });
+    return det;
   }
 
   function planCard() {

@@ -19,7 +19,7 @@
   function errMsg(e) {
     switch (e?.code) {
       case 'quota_exceeded': return '瀏覽器儲存空間滿了，先匯出備份再清掉舊資料。';
-      default: return '剛剛那筆沒存到，請檢查網路後再試一次。';
+      default: return '剛剛那筆沒存到，請再試一次。';
     }
   }
 

@@ -130,7 +130,7 @@ ${store}
     buildChatPreamble,
 
     async estimate({ image, note, mealType, context }) {
-      // 有照片時用比較強的模型看份量（慢幾秒、多用一點額度）
+      // ponytail: LocalAI 不看 modelTier，每次呼叫都用該服務設定的單一模型；成本或品質需要時再加分級模型
       const raw = await call('json', buildEstimatePrompt({ hasImage: !!image, note, mealType, context }), image ? { images: [image], modelTier: 'complex' } : {});
       const r = L.validateEstimate(raw);
       if (!r.ok) throw { code: 'invalid_json', message: MSG.invalid };

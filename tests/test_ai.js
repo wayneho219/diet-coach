@@ -125,6 +125,15 @@ const stops = { anthropic: ['end_turn', 'max_tokens'], openai: ['stop', 'length'
   t = mk({ provider: 'openai', key: 'K', model: '' }, ok([specs.openai.sse('a', 'b', 'stop')]));
   await t.sample('hi'); assert.strictEqual(t.calls[0].body.model, LocalAI.PROVIDERS.openai.model);
 
+  // 串流中的錯誤事件要 reject，不能當成功
+  for (const body of [ev({ type: 'error', error: { type: 'overloaded_error' } }), ev({ error: { message: 'boom' } })]) {
+    const prov = body.includes('"type":"error"') ? 'anthropic' : null;
+    for (const p of prov ? [prov] : ['openai', 'gemini']) {
+      t = mk({ provider: p, key: 'K', model: 'm' }, ok([body]));
+      await rejects(t.sample('hi'), 'upstream_error');
+    }
+  }
+
   // parseJson
   assert.deepStrictEqual(LocalAI.parseJson('{"a":1}'), { a: 1 });
   assert.deepStrictEqual(LocalAI.parseJson('好的：\n{"a":1}\n以上'), { a: 1 });
