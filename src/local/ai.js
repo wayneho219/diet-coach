@@ -116,7 +116,10 @@
         if (!res.ok) {
           if (res.status === 401 || res.status === 403) throw err('bad_key');
           if (res.status === 429) throw err('rate_limited');
-          throw err('upstream_error');
+          // 帶上狀態碼和服務商的錯誤說明（例如額度不足、找不到模型），方便使用者排查；說明裡不含金鑰
+          let detail = '';
+          try { const j = await res.json(); detail = String(j?.error?.message || j?.[0]?.error?.message || '').slice(0, 200); } catch (_) { /* 沒有 JSON 就算了 */ }
+          throw { code: 'upstream_error', status: res.status, detail };
         }
         const reader = res.body.getReader(), dec = new TextDecoder();
         let buf = '', text = '', truncated = false;
@@ -143,7 +146,7 @@
       } catch (e) {
         if (isAbort(e)) throw err('cancelled');
         if (e && e.code) throw e;
-        throw err('upstream_error');
+        throw { code: 'upstream_error', network: true };   // fetch 本身失敗：沒網路、被 CSP／擴充套件擋下
       }
     }
     const sample = (input, opts) => run(input, opts);

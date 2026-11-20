@@ -121,6 +121,12 @@ const stops = { anthropic: ['end_turn', 'max_tokens'], openai: ['stop', 'length'
   }
   t = mk(cfg, () => { throw new TypeError('fail'); });
   await rejects(t.sample('hi'), 'upstream_error');
+  await t.sample('hi').catch(e => assert.strictEqual(e.network, true));
+  // 其他 HTTP 錯誤帶上狀態碼和服務商的說明
+  t = mk(cfg, { ok: false, status: 400, json: async () => ({ error: { message: 'credit balance is too low' } }) });
+  await t.sample('hi').then(() => assert.fail('should reject'), e => assert.deepStrictEqual(e, { code: 'upstream_error', status: 400, detail: 'credit balance is too low' }));
+  t = mk(cfg, { ok: false, status: 404, json: async () => { throw new Error('not json'); } });
+  await t.sample('hi').then(() => assert.fail('should reject'), e => assert.deepStrictEqual(e, { code: 'upstream_error', status: 404, detail: '' }));
   // model 空值退回預設
   t = mk({ provider: 'openai', key: 'K', model: '' }, ok([specs.openai.sse('a', 'b', 'stop')]));
   await t.sample('hi'); assert.strictEqual(t.calls[0].body.model, LocalAI.PROVIDERS.openai.model);

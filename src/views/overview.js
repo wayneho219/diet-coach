@@ -62,7 +62,10 @@
         const ai = root.LocalAI.create({ getConfig: () => Cfg.current(), fetch: (...a) => fetch(...a) });
         await ai('回覆 OK 兩個字');
         toast('✓ 連線成功');
-      } catch (e) { toast(AI_ERR[e?.code] || '連不上，檢查網路或模型名稱。', true); }
+      } catch (e) {
+        const why = e?.status ? `（HTTP ${e.status}${e.detail ? '：' + e.detail : ''}）` : e?.network ? '（請求沒送出去：沒網路，或被瀏覽器擋下）' : '';
+        toast(AI_ERR[e?.code] || '連不上，檢查網路或模型名稱。' + why, true);
+      }
     };
     const exportBackup = () => {
       const blob = new Blob([JSON.stringify(App.db.exportAll())], { type: 'application/json' });
