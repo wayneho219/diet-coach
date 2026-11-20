@@ -1,0 +1,34 @@
+<title>飲食教練</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap">
+<link rel="stylesheet" href="style.css">
+
+<p id="banner" class="banner" hidden>資料沒辦法存到這個瀏覽器。</p>
+<main id="view-home" class="view"><p class="empty">載入中…</p></main>
+<main id="view-overview" class="view" hidden></main>
+
+<nav class="tabbar" aria-label="主要">
+  <button id="tab-home" class="tab" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>首頁</button>
+  <button id="fab" class="fab" aria-label="記一餐">＋</button>
+  <button id="tab-overview" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-6 4 4 8-9"/></svg>概覽</button>
+</nav>
+<button id="chat-fab" class="chat-fab" aria-label="問教練">💬</button>
+
+<div id="sheet-backdrop" class="sheet-backdrop" hidden></div>
+<section id="sheet" class="sheet" role="dialog" aria-modal="true" aria-label="面板" hidden></section>
+<p id="toast" class="toast" role="status" hidden></p>
+
+<script src="src/profile.js"></script>
+<script src="src/core/logic.js"></script>
+<script src="src/core/ui.js"></script>
+<script src="src/core/charts.js"></script>
+<script src="src/core/store.js"></script>
+<script src="src/core/claude.js"></script>
+<script src="src/views/meal-editor.js"></script>
+<script src="src/views/home.js"></script>
+<script src="src/views/add.js"></script>
+<script src="src/views/overview.js"></script>
+<script src="src/views/calendar.js"></script>
+<script src="src/views/chat.js"></script>
+<script src="src/app.js"></script>
