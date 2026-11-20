@@ -81,6 +81,28 @@
   const clampTarget = (kcal, s) => { const { floor } = goalOf(s); return floor == null ? kcal : Math.max(floor, kcal); };
   const suggestTarget = (td, s) => clampTarget(td + goalOf(s).delta, s);
 
+  // 有目標體重和目標日期時，用「要減／增多少 ÷ 剩幾週」算每日熱量差（1 kg ≈ 7,700 大卡）
+  // 速度上限：減脂每週最多減體重的 1%、增重每週最多增 0.5%；增肌減脂不看目標體重
+  // 回傳 { target, protein, weekly（kg／週，負數是減）, capped, weeksNeeded, error: 'direction'|null }
+  const KCAL_PER_KG = 7700, MAX_RATE = { cut: 0.01, bulk: 0.005 };
+  function weightPlan(td, s, weight, today = dayKey()) {
+    const g = goalOf(s), protein = weight ? Math.round(weight * 1.6) : s.protein;
+    const base = { target: suggestTarget(td, s), protein, weekly: null, capped: false, weeksNeeded: null, error: null };
+    if (g.key === 'recomp' || !weight || !s.targetWeight || !s.targetDate) return base;
+    const diff = s.targetWeight - weight;
+    if (g.key === 'cut' ? diff >= 0 : diff <= 0) return { ...base, error: 'direction' };
+    const weeks = Math.max(1, diffDays(today, s.targetDate) / 7);
+    const max = MAX_RATE[g.key] * weight;
+    let rate = diff / weeks, capped = false;
+    if (Math.abs(rate) > max) { rate = Math.sign(rate) * max; capped = true; }
+    const raw = td + rate * KCAL_PER_KG / 7;
+    const target = clampTarget(Math.round(raw / 10) * 10, s);
+    const weekly = Math.round((target - td) * 7 / KCAL_PER_KG * 100) / 100;   // 套過 1,200 下限後實際的速度
+    // 被速度上限或 1,200 下限拉慢時（四捨五入的誤差不算），告訴使用者照這個速度實際要幾週
+    const slowed = capped || target - raw > 10;
+    return { target, protein, weekly, capped: slowed, weeksNeeded: slowed && weekly ? Math.ceil(Math.abs(diff) / Math.abs(weekly)) : null, error: null };
+  }
+
   const NUTRIENTS = ['kcal', 'protein', 'carbs', 'fat'];
   const MICROS = ['fiber', 'sodium'];          // 選填：缺少時當作 0
   const ALL = [...NUTRIENTS, ...MICROS];
@@ -489,7 +511,7 @@
     return out;
   }
 
-  root.Logic = { GOALS, goalOf, MET, NUTRIENTS, dayKey, addDays, diffDays, bmr, tdee, exercise, customMet, leanMass, restingKcal, metFactor, usesSteps, macroTargets, macroState, dayAddBack, suggestTarget, clampTarget, totals, avg7, weekAdvice, lowIntake, defaultMealType,
+  root.Logic = { GOALS, goalOf, MET, NUTRIENTS, dayKey, addDays, diffDays, bmr, tdee, exercise, customMet, leanMass, restingKcal, metFactor, usesSteps, macroTargets, macroState, dayAddBack, suggestTarget, clampTarget, weightPlan, totals, avg7, weekAdvice, lowIntake, defaultMealType,
     normalizeMeal, itemStore, itemTime, mergeSameType, syncMealStore, groupItems, storeLabel, detectStores, mealTotals, mealEmoji, newMeal, setQty, updateItem, addItem, mergeIntoMeal, streak, weekStart, weekSeries, seriesAverage,
     recentItems, storesByRecent, isFavorite, toggleFavorite, favItems, detectStore, mergeFoods, validateEstimate, weekSummaryText, isStrength, strengthDays, exerciseText, MICROS, highSodiumDays, dayStatus, monthGrid, monthSummary,
     bodyCompText, CHAT_MAX, CHAT_TEXT_MAX, trimChat, todayDetailText, chatTurns, chatVisible, splitMeal };

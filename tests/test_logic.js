@@ -469,3 +469,37 @@ console.log('ok');
   assert.ok(t.includes('2026-11-17 熱量 70 kcal') && t.includes('（今天，還在進行中）'));
   assert.ok(!t.includes('2026-11-18'), '之後的日子不列');
 }
+
+// 目標體重＋期限：每日熱量差 = 差幾公斤 × 7700 ÷ 天數，速度有上限
+{
+  const today = '2026-01-01';
+  const cut = { goal: 'cut', targetWeight: 58, targetDate: '2026-03-26' };   // 12 週減 2 kg
+  let p = L.weightPlan(2000, cut, 60, today);
+  assert.strictEqual(p.target, 1820);                 // 2000 − 2/12×7700/7 ≈ 1817 → 1820
+  assert.strictEqual(p.protein, 96);                  // 60 × 1.6
+  assert.strictEqual(p.capped, false);
+  assert.strictEqual(p.weekly, -0.16);
+  assert.strictEqual(p.weeksNeeded, null);
+  // 太快：4 週減 6 kg → 上限每週 1%（0.6 kg）
+  p = L.weightPlan(2000, { ...cut, targetWeight: 54, targetDate: '2026-01-29' }, 60, today);
+  assert.strictEqual(p.capped, true);
+  assert.strictEqual(p.target, 1340);                 // 2000 − 0.6×1100 = 1340
+  assert.strictEqual(p.weeksNeeded, 10);   // 6 ÷ 0.6
+  // 套 1,200 下限後，回報的是實際速度
+  p = L.weightPlan(1500, { ...cut, targetWeight: 54, targetDate: '2026-01-29' }, 60, today);
+  assert.strictEqual(p.target, 1200);
+  assert.strictEqual(p.weekly, -0.27);
+  assert.strictEqual(p.weeksNeeded, 23);   // 6 ÷ 0.27
+  // 方向不對：減脂卻要變重；增重卻要變輕
+  assert.strictEqual(L.weightPlan(2000, { ...cut, targetWeight: 62 }, 60, today).error, 'direction');
+  assert.strictEqual(L.weightPlan(2000, { goal: 'bulk', targetWeight: 58, targetDate: '2026-03-26' }, 60, today).error, 'direction');
+  // 增重：上限每週 0.5%
+  p = L.weightPlan(2000, { goal: 'bulk', targetWeight: 66, targetDate: '2026-02-26' }, 60, today);
+  assert.strictEqual(p.capped, true);
+  assert.strictEqual(p.target, 2330);                 // 2000 + 0.3×1100
+  // 沒填目標或是增肌減脂：沿用固定差值
+  assert.strictEqual(L.weightPlan(2000, { goal: 'cut' }, 60, today).target, 1700);
+  assert.strictEqual(L.weightPlan(2000, { goal: 'recomp', targetWeight: 55, targetDate: '2026-03-26' }, 60, today).target, 1900);
+  assert.strictEqual(L.weightPlan(2000, { goal: 'recomp' }, 60, today).weekly, null);
+}
+console.log('weightPlan ok');

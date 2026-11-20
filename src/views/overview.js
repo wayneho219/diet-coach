@@ -150,10 +150,14 @@
     const block = (title, list) => { const r = rows(list); return r.length ? [el('h3', { class: 'plan-sub' }, title), el('dl', { class: 'calc' }, r)] : []; };
     const rmr = L.restingKcal(s, weight);   // 有 InBody 就用 InBody 當基準
     const td = rmr ? Math.round(rmr * s.activity) : null;
+    const plan = td ? L.weightPlan(td, s, weight) : null;   // 有目標體重和日期時，建議目標照速度算
+    const wk = plan?.weekly ? `每週約 ${plan.weekly > 0 ? '+' : ''}${plan.weekly} kg` : null;
     const view = [
       ...block('每日目標', [
         ['目標', L.goalOf(s).word], ['熱量', `${fmt(s.target)} 大卡`], ['蛋白質', `${s.protein} g`], ['飲水', `${fmt(s.water)} ml`],
         ['纖維', `${s.fiber} g`], ['鈉上限', `${fmt(s.sodium)} mg`], ['肌力訓練', `每週 ${s.strengthGoal} 次`]]),
+      ...block('目標體重', L.goalOf(s).key === 'recomp' ? [] : [
+        ['目標體重', s.targetWeight ? `${s.targetWeight} kg` : null], ['目標日期', s.targetDate || null], ['預計速度', s.targetWeight && s.targetDate ? wk : null]]),
       ...block('身體狀態', [
         ['身高', s.height ? `${s.height} cm` : null], ['年齡', s.age ? `${s.age} 歲` : null], ['體重', weight ? `${weight} kg` : null],
         ['體脂率', s.bodyFat ? `${s.bodyFat}%` : null], ['骨骼肌量', s.smm ? `${s.smm} kg` : null],
@@ -161,7 +165,9 @@
         ['內臟脂肪', s.visceral ? `等級 ${s.visceral}` : null], ['InBody 日期', s.bodyDate || null]]),
       ...block('代謝參考', rmr ? [
         [s.bmrInBody ? '基礎代謝（InBody）' : s.bodyFat ? '基礎代謝（估）' : '基礎代謝', `${fmt(rmr)} 大卡`],
-        ['每日總消耗', `${fmt(td)} 大卡`], ['建議目標', `${fmt(L.suggestTarget(td, s))} 大卡`]] : []),
+        ['每日總消耗', `${fmt(td)} 大卡`], ['建議目標', `${fmt(plan.target)} 大卡`]] : []),
+      plan?.error ? el('p', { class: 'hint' }, '目標體重和目標方向對不上：減脂要比現在輕，增重要比現在重。') : null,
+      plan?.capped ? el('p', { class: 'hint' }, `照目標日期的速度太快，建議目標已調整到安全範圍，大約要 ${plan.weeksNeeded} 週。`) : null,
     ];
 
     const inputs = {};
@@ -175,6 +181,8 @@
       el('label', { class: 'field' }, '目標', inputs.goal), el('label', { class: 'field' }, '性別', inputs.sex),
       num('height', '身高（cm）'), num('age', '年齡', { placeholder: '填了才能算代謝' }),
       el('label', { class: 'field', style: 'grid-column:1/-1' }, '平常活動量', inputs.activity),
+      num('targetWeight', '目標體重（kg）'),
+      el('label', { class: 'field' }, '目標日期', inputs.targetDate = el('input', { type: 'date', value: s.targetDate ?? '' })),
       num('target', '熱量目標（大卡）'), num('protein', '蛋白質（g）'),
       num('water', '飲水（ml）'), num('cup', '每杯容量（ml）'), num('cap', '運動加回上限（大卡）'),
       num('fiber', '纖維目標（g）'), num('sodium', '鈉上限（mg）'),
@@ -185,10 +193,10 @@
       el('label', { class: 'field' }, '量測日期', inputs.bodyDate = el('input', { type: 'date', value: s.bodyDate ?? '' })),
       el('button', { class: 'btn btn-primary', style: 'grid-column:1/-1', onclick: () => {
         const v = {};
-        for (const [k, input] of Object.entries(inputs)) v[k] = input.value === '' ? null : ['bodyDate', 'goal', 'sex'].includes(k) ? input.value : Number(input.value);
+        for (const [k, input] of Object.entries(inputs)) v[k] = input.value === '' ? null : ['bodyDate', 'targetDate', 'goal', 'sex'].includes(k) ? input.value : Number(input.value);
         if (!(v.target >= 800 && v.protein > 0 && v.water > 0 && v.height > 0)) return toast('熱量（至少 800）、蛋白質、飲水和身高都要填。', true);
         const out = (x, lo, hi) => x != null && !(x >= lo && x <= hi);
-        if (out(v.bodyFat, 3, 70) || out(v.smm, 5, 60) || out(v.visceral, 1, 30) || out(v.bmrInBody, 600, 3000) || out(v.bodyWeight, 30, 200)) return toast('體脂率 3–70、骨骼肌量 5–60、內臟脂肪等級 1–30、基礎代謝 600–3000、體重 30–200。', true);
+        if (out(v.bodyFat, 3, 70) || out(v.smm, 5, 60) || out(v.visceral, 1, 30) || out(v.bmrInBody, 600, 3000) || out(v.bodyWeight, 30, 200) || out(v.targetWeight, 30, 200)) return toast('體脂率 3–70、骨骼肌量 5–60、內臟脂肪等級 1–30、基礎代謝 600–3000、體重和目標體重 30–200。', true);
         v.cup = v.cup ?? Store.DEFAULTS.cup;
         if (!(v.cup >= 50 && v.cup <= 2000)) return toast('每杯容量請填 50 到 2000 ml。', true);
         v.cap = v.cap ?? Store.DEFAULTS.cap;
