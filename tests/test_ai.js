@@ -119,6 +119,36 @@ const stops = { anthropic: ['end_turn', 'max_tokens'], openai: ['stop', 'length'
     t = mk(cfg, { ok: false, status: st, body: null });
     await rejects(t.sample('hi'), code);
   }
+  // 列出模型：三家各自的格式、過濾、排序、標頭
+  {
+    const calls = [];
+    const json = (status, body) => async (url, init) => { calls.push({ url, headers: init.headers }); return { ok: status < 300, status, json: async () => body }; };
+    const ids = await LocalAI.listModels({ provider: 'anthropic', key: 'K' }, json(200, { data: [{ id: 'claude-b' }, { id: 'claude-a' }] }));
+    assert.deepStrictEqual(ids, ['claude-b', 'claude-a']);
+    assert.strictEqual(calls[0].headers['x-api-key'], 'K');
+    assert.strictEqual(calls[0].headers['anthropic-dangerous-direct-browser-access'], 'true');
+    const oa = await LocalAI.listModels({ provider: 'openai', key: 'K' }, json(200, { data: [
+      { id: 'gpt-old', created: 1 }, { id: 'gpt-new', created: 3 }, { id: 'o9-mini', created: 2 },
+      { id: 'text-embedding-3', created: 9 }, { id: 'gpt-audio', created: 9 }, { id: 'gpt-image-1', created: 9 }, { id: 'tts-1', created: 9 }, { id: 'whisper-1', created: 9 }] }));
+    assert.deepStrictEqual(oa, ['gpt-new', 'o9-mini', 'gpt-old']);
+    assert.strictEqual(calls[1].headers.Authorization, 'Bearer K');
+    const gm = await LocalAI.listModels({ provider: 'gemini', key: 'K' }, json(200, { models: [
+      { name: 'models/gemini-2.5-flash', supportedGenerationMethods: ['generateContent'] },
+      { name: 'models/gemini-10.0-pro', supportedGenerationMethods: ['generateContent', 'countTokens'] },
+      { name: 'models/text-embedding-004', supportedGenerationMethods: ['embedContent'] },
+      { name: 'models/imagen-4', supportedGenerationMethods: ['generateContent'] }] }));
+    assert.deepStrictEqual(gm, ['gemini-10.0-pro', 'gemini-2.5-flash']);   // 數字比大小，不是字串
+    assert.strictEqual(calls[2].headers['x-goog-api-key'], 'K');
+    assert.ok(!calls[2].url.includes('key='));   // 金鑰不放網址
+    await rejects(LocalAI.listModels({ provider: 'gemini', key: '' }, json(200, {})), 'not_granted');
+    await rejects(LocalAI.listModels({ provider: 'gemini', key: 'K' }, json(401, {})), 'bad_key');
+    await LocalAI.listModels({ provider: 'gemini', key: 'K' }, () => { throw new TypeError('x'); })
+      .then(() => assert.fail('should reject'), e => assert.deepStrictEqual(e, { code: 'upstream_error', network: true }));
+    // 選模型：在清單裡就留著，不在就換第一個，清單空的就不動
+    assert.strictEqual(LocalAI.pickModel(['a', 'b'], 'b'), 'b');
+    assert.strictEqual(LocalAI.pickModel(['a', 'b'], 'gone'), 'a');
+    assert.strictEqual(LocalAI.pickModel([], 'x'), 'x');
+  }
   t = mk(cfg, () => { throw new TypeError('fail'); });
   await rejects(t.sample('hi'), 'upstream_error');
   await t.sample('hi').catch(e => assert.strictEqual(e.network, true));

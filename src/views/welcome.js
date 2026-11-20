@@ -39,6 +39,10 @@
       go.disabled = true; go.textContent = '測試中…'; msg.hidden = true;
       Cfg.save({ provider: p, keys: { [p]: k } });
       try {
+        // 先查這把金鑰能用的模型；預設模型不在清單裡（例如已下架）就換成清單第一個，再測試
+        const ids = await root.LocalAI.listModels({ provider: p, key: k }, (...a) => fetch(...a));
+        const cur = Cfg.current().model, m = root.LocalAI.pickModel(ids, cur);
+        if (m !== cur) Cfg.save({ model: { [p]: m } });
         await ping();
         Cfg.save({ onboarded: true });
         root.App.reinitAI();

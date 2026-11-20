@@ -24,6 +24,9 @@
   // 「⚙️ AI 設定」：服務、金鑰、模型、教練名稱，加上備份匯出／匯入（放在最下面，預設收合）
   // 沒按儲存的輸入與展開狀態：頁面重繪（切回分頁、資料更新）時不能被洗掉
   let draft = null, detailsOpen = null;
+  // 查過的模型清單，key 是「服務|金鑰」：{ ids } 或 { error }；只放記憶體，重新整理頁面才會再查
+  const modelLists = {};
+  const CUSTOM = '__custom__';
   function settingsCard() {
     const { el, toast, confirmTap } = root.UI, Cfg = root.Config, App = root.App, P = root.LocalAI.PROVIDERS;
     const c = Cfg.get();
@@ -31,20 +34,55 @@
     if (!draft) draft = seed(c);
     const provider = el('select', {}, Object.entries(P).map(([k, v]) => el('option', { value: k, selected: k === draft.provider }, v.label)));
     const key = el('input', { type: 'password', autocomplete: 'off', value: draft.key, placeholder: '貼上 API 金鑰' });
-    const model = el('input', { type: 'text', autocomplete: 'off', value: draft.model });
+    // model 文字欄是真正的值；查到清單時改顯示下拉選單，選「自訂…」才露出文字欄
+    const model = el('input', { type: 'text', autocomplete: 'off', value: draft.model, placeholder: '模型名稱' });
+    const modelSel = el('select', { hidden: true });
+    const modelHint = el('small', { class: 'muted' });
     const name = el('input', { type: 'text', value: draft.coachName });
+    const showModels = () => {
+      const k = key.value.trim(), entry = modelLists[provider.value + '|' + k];
+      modelHint.textContent = !k ? '' : !entry || entry.loading ? '載入模型清單中…' : entry.error ? '查不到模型清單：' + root.Welcome.errorText(entry.error) : '';
+      if (!entry?.ids?.length) { modelSel.hidden = true; model.hidden = false; return; }
+      const inList = entry.ids.includes(model.value);
+      modelSel.replaceChildren(...entry.ids.map(id => el('option', { value: id, selected: id === model.value }, id)),
+        el('option', { value: CUSTOM, selected: !inList }, '自訂…'));
+      modelSel.hidden = false; model.hidden = inList;
+    };
+    let loadTimer = null;
+    const loadModels = () => {
+      clearTimeout(loadTimer);
+      const p = provider.value, k = key.value.trim(), id = p + '|' + k;
+      showModels();
+      if (!k || modelLists[id]) return;
+      loadTimer = setTimeout(async () => {   // 貼金鑰時等打完再查
+        modelLists[id] = { loading: true };   // 查詢中：重繪出來的新卡片不要再查一次
+        try { modelLists[id] = { ids: await root.LocalAI.listModels({ provider: p, key: k }, (...a) => fetch(...a)) }; }
+        catch (e) { modelLists[id] = { error: e }; }
+        // 這張卡片可能已經被重繪換掉了：換掉就重畫概覽，還在就只更新選單（不搶走輸入框的焦點）
+        if (!modelSel.isConnected) { if (root.App.state.tab === 'overview') rerender(); }
+        else if (provider.value === p && key.value.trim() === k) showModels();
+      }, 500);
+    };
+    modelSel.addEventListener('change', () => {
+      if (modelSel.value === CUSTOM) { model.hidden = false; model.focus(); }
+      else { model.value = modelSel.value; model.hidden = true; }
+      sync();
+    });
     // 每次輸入都記進 draft；切換服務時，金鑰和模型欄換成那家打過的值，沒打過就用已儲存的
     const sync = () => {
       draft.provider = provider.value; draft.key = key.value; draft.model = model.value; draft.coachName = name.value;
       draft.typed[draft.provider] = { key: key.value, model: model.value };
     };
     [key, model].forEach(i => i.addEventListener('input', sync));
+    key.addEventListener('input', loadModels);
     name.addEventListener('input', () => { draft.coachName = name.value; });
     provider.addEventListener('change', () => {
       const g = Cfg.get(), p = provider.value, t = draft.typed[p];
       key.value = t ? t.key : g.keys[p]; model.value = t ? t.model : g.model[p];
       sync();
+      loadModels();
     });
+    loadModels();
     const save = () => {
       const p = provider.value;
       Cfg.save({ provider: p, keys: { [p]: key.value.trim() }, model: { [p]: model.value.trim() }, coachName: name.value.trim() });
@@ -85,7 +123,7 @@
         el('label', { class: 'field' }, '服務', provider),
         el('label', { class: 'field' }, '教練名稱', name),
         el('label', { class: 'field' }, '金鑰', key),
-        el('label', { class: 'field' }, '模型', model),
+        el('label', { class: 'field' }, '模型', modelSel, model, modelHint),
         el('button', { class: 'btn btn-primary', onclick: () => { save(); toast('設定已儲存。'); } }, '儲存'),
         el('button', { class: 'btn btn-soft', onclick: test }, '測試連線'),
         el('button', { class: 'btn btn-soft', onclick: exportBackup }, '匯出備份'),

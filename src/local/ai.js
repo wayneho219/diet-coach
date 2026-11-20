@@ -27,7 +27,7 @@
         }));
         return {
           url: 'https://api.anthropic.com/v1/messages',
-          headers: { 'x-api-key': cfg.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+          headers: ANTHROPIC_HEADERS(cfg.key),
           body: { model: cfg.model, max_tokens: MAX_TOKENS, stream: true, messages },
         };
       },
@@ -85,6 +85,53 @@
   const err = code => ({ code });
   const isAbort = e => e && e.name === 'AbortError';
 
+  // 非 2xx：帶上狀態碼和服務商的錯誤說明（例如額度不足、找不到模型），方便使用者排查；說明裡不含金鑰
+  async function httpError(res) {
+    if (res.status === 401 || res.status === 403) throw err('bad_key');
+    if (res.status === 429) throw err('rate_limited');
+    let detail = '';
+    try { const j = await res.json(); detail = String(j?.error?.message || j?.[0]?.error?.message || '').slice(0, 200); } catch (_) { /* 沒有 JSON 就算了 */ }
+    throw { code: 'upstream_error', status: res.status, detail };
+  }
+
+  // 列出這把金鑰能用的對話模型，較新的排前面
+  const ANTHROPIC_HEADERS = k => ({ 'x-api-key': k, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' });
+  const LISTS = {
+    anthropic: {
+      url: 'https://api.anthropic.com/v1/models?limit=1000',
+      headers: ANTHROPIC_HEADERS,
+      ids: j => (j.data || []).map(m => m.id),   // API 已經依新到舊排好
+    },
+    openai: {
+      url: 'https://api.openai.com/v1/models',
+      headers: k => ({ Authorization: 'Bearer ' + k }),
+      // 清單混了語音、圖片、向量模型，只留對話模型
+      ids: j => (j.data || [])
+        .filter(m => /^(gpt-|o\d)/.test(m.id) && !/audio|realtime|tts|transcribe|image|search|embedding/.test(m.id))
+        .sort((a, b) => (b.created || 0) - (a.created || 0)).map(m => m.id),
+    },
+    gemini: {
+      url: 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000',
+      headers: k => ({ 'x-goog-api-key': k }),
+      // 沒有日期欄位，用名稱數字由大到小近似新到舊
+      ids: j => (j.models || [])
+        .filter(m => (m.supportedGenerationMethods || []).includes('generateContent') && !/embedding|imagen|aqa|tts|image-generation|audio/.test(m.name))
+        .map(m => m.name.replace(/^models\//, ''))
+        .sort((a, b) => b.localeCompare(a, 'en', { numeric: true })),
+    },
+  };
+  async function listModels({ provider, key }, fetchFn) {
+    const L = LISTS[provider];
+    if (!L || !key) throw err('not_granted');
+    let res;
+    try { res = await fetchFn(L.url, { headers: L.headers(key) }); }
+    catch (_) { throw { code: 'upstream_error', network: true }; }
+    if (!res.ok) await httpError(res);
+    return L.ids(await res.json());
+  }
+  // 目前的模型在清單裡就留著，不在（例如預設名稱已下架）就換成清單第一個
+  const pickModel = (ids, current) => (ids.includes(current) || !ids.length ? current : ids[0]);
+
   function parseJson(text) {
     try { return JSON.parse(text); } catch (_) { /* 往下容錯 */ }
     const s = String(text);
@@ -113,14 +160,7 @@
           body: JSON.stringify(req.body),
           signal: opts.signal,
         });
-        if (!res.ok) {
-          if (res.status === 401 || res.status === 403) throw err('bad_key');
-          if (res.status === 429) throw err('rate_limited');
-          // 帶上狀態碼和服務商的錯誤說明（例如額度不足、找不到模型），方便使用者排查；說明裡不含金鑰
-          let detail = '';
-          try { const j = await res.json(); detail = String(j?.error?.message || j?.[0]?.error?.message || '').slice(0, 200); } catch (_) { /* 沒有 JSON 就算了 */ }
-          throw { code: 'upstream_error', status: res.status, detail };
-        }
+        if (!res.ok) await httpError(res);
         const reader = res.body.getReader(), dec = new TextDecoder();
         let buf = '', text = '', truncated = false;
         const line = l => {
@@ -154,7 +194,7 @@
     return sample;
   }
 
-  const LocalAI = { PROVIDERS, create, parseJson };
+  const LocalAI = { PROVIDERS, create, parseJson, listModels, pickModel };
   root.LocalAI = LocalAI;
   if (typeof module !== 'undefined') module.exports = LocalAI;
 })(typeof window !== 'undefined' ? window : globalThis);
