@@ -56,6 +56,7 @@
       App.db = db;   // 匯出／匯入用
       App.reinitAI();
       App.loadStore();
+      if (root.Welcome.shouldShow(root.Config)) root.Welcome.open();   // 第一次打開才出現
     },
 
     // 存完設定後重建 AI 轉接（Coach 遇到永久錯誤會把 sample 清掉）

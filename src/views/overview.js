@@ -15,18 +15,13 @@
     if (!root.Store.ready) { $('view-overview').replaceChildren(el('p', { class: 'empty' }, '載入中…')); return; }
     $('view-overview').replaceChildren(
       el('h1', { class: 'page-title' }, '概覽'),
-      settingsCard(), planCard(today), insightCard(today),
+      planCard(today), insightCard(today),
       chartCard('weight', today), chartCard('kcal', today), chartCard('exercise', today), chartCard('water', today),
-      adviceCard(today));
+      adviceCard(today), settingsCard());
   }
   const rerender = () => render({ today: root.App.today() });
 
-  // 「⚙️ AI 設定」：服務、金鑰、模型、教練名稱，加上備份匯出／匯入
-  const AI_ERR = {
-    bad_key: '金鑰無效或沒有權限，檢查一下金鑰。',
-    rate_limited: 'AI 的用量暫時到上限，等一下再試。',
-    not_granted: '還沒填金鑰。',
-  };
+  // 「⚙️ AI 設定」：服務、金鑰、模型、教練名稱，加上備份匯出／匯入（放在最下面，預設收合）
   // 沒按儲存的輸入與展開狀態：頁面重繪（切回分頁、資料更新）時不能被洗掉
   let draft = null, detailsOpen = null;
   function settingsCard() {
@@ -58,14 +53,8 @@
     };
     const test = async () => {
       save();
-      try {
-        const ai = root.LocalAI.create({ getConfig: () => Cfg.current(), fetch: (...a) => fetch(...a) });
-        await ai('回覆 OK 兩個字');
-        toast('✓ 連線成功');
-      } catch (e) {
-        const why = e?.status ? `（HTTP ${e.status}${e.detail ? '：' + e.detail : ''}）` : e?.network ? '（請求沒送出去：沒網路，或被瀏覽器擋下）' : '';
-        toast(AI_ERR[e?.code] || '連不上，檢查網路或模型名稱。' + why, true);
-      }
+      try { await root.Welcome.ping(); toast('✓ 連線成功'); }
+      catch (e) { toast(root.Welcome.errorText(e), true); }
     };
     const exportBackup = () => {
       const blob = new Blob([JSON.stringify(App.db.exportAll())], { type: 'application/json' });
@@ -90,7 +79,7 @@
       toast('選好備份了。按下方按鈕會取代目前所有紀錄。');
     });
     const pickBtn = el('button', { class: 'btn btn-soft', onclick: () => file.click() }, '匯入備份');
-    const det = el('details', { class: 'card', open: detailsOpen ?? !Cfg.hasKey() },
+    const det = el('details', { class: 'card', open: detailsOpen ?? false },
       el('summary', { class: 'card-title' }, '⚙️ AI 設定'),
       el('div', { class: 'grid2' },
         el('label', { class: 'field' }, '服務', provider),

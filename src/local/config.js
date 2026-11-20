@@ -7,7 +7,7 @@
     const P = root.LocalAI.PROVIDERS;
     const model = {}, keys = {};
     for (const n of NAMES) { model[n] = P[n].model; keys[n] = ''; }
-    return { provider: 'anthropic', keys, model, coachName: '教練' };
+    return { provider: 'anthropic', keys, model, coachName: '教練', onboarded: false };
   }
 
   function create(storage) {

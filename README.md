@@ -20,7 +20,7 @@ AI diet & nutrition tracker for Taiwanese meals — bring your own Claude/OpenAI
 python3 -m http.server 8000
 ```
 
-開啟 `http://localhost:8000`，在概覽頁的「⚙️ AI 設定」選擇服務、貼上金鑰，按「儲存」。
+開啟 `http://localhost:8000`，第一次打開會出現設定畫面：選擇服務、貼上金鑰，按「測試並開始」。之後要改，在概覽頁最下面的「⚙️ AI 設定」。
 
 ## 手機使用
 

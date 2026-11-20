@@ -6,7 +6,8 @@
   const cx = i => PL + (i + 0.5) * colW;
   const md = key => { const [, m, d] = key.split('-').map(Number); return `${m}/${d}`; };
   const num = (v, digits) => digits ? v.toFixed(digits) : Math.round(v).toLocaleString('zh-TW');
-  const niceMax = v => { if (v <= 0) return 1; const p = 10 ** Math.floor(Math.log10(v)); return Math.ceil(v / p) * p; };
+  // 至少 10，刻度（0、一半、最大）才不會四捨五入成重複的數字；沒有資料時用 100
+  const niceMax = v => { if (!(v > 0)) return 100; v = Math.max(v, 10); const p = 10 ** Math.floor(Math.log10(v)); return Math.ceil(v / p) * p; };
 
   const xAxis = pts => pts.map((p, i) =>
     `<text class="tick" x="${cx(i)}" y="${H - 20}" text-anchor="middle">${WD[i]}</text>` +
@@ -77,7 +78,7 @@
     attachHover(svg, pts, tipEl, p => p.w == null ? '沒有量體重' : `體重 ${num(p.w, digits)} ${unit}　7 日平均 ${num(p.avg, digits)} ${unit}`);
   }
 
-  const Charts = { bars, line };
+  const Charts = { bars, line, niceMax };
   root.Charts = Charts;
   if (typeof module !== 'undefined') module.exports = Charts;
 })(typeof window !== 'undefined' ? window : globalThis);

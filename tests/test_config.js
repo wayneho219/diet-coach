@@ -26,6 +26,7 @@ assert.strictEqual(d.provider, 'anthropic');
 assert.deepStrictEqual(d.keys, { anthropic: '', openai: '', gemini: '' });
 assert.deepStrictEqual(d.model, { anthropic: P.anthropic.model, openai: P.openai.model, gemini: P.gemini.model });
 assert.strictEqual(d.coachName, '教練');
+assert.strictEqual(d.onboarded, false);
 assert.strictEqual(cfg.hasKey(), false);
 
 // keys／model 一層合併，只改傳進來的那家
@@ -44,6 +45,8 @@ assert.deepStrictEqual(cfg.current(), { provider: 'gemini', key: 'k3', model: P.
 cfg.save({ coachName: '小明' });
 assert.strictEqual(cfg.get().coachName, '小明');
 assert.strictEqual(cfg.get().provider, 'gemini');
+cfg.save({ onboarded: true });
+assert.strictEqual(Config.create(st).get().onboarded, true);   // 看過歡迎畫面就記住
 
 // 存在 diet-coach:config，重新建立後還在
 assert.ok(JSON.parse(st.getItem('diet-coach:config')).keys.openai === 'k2');
