@@ -1,4 +1,5 @@
 <title>飲食教練</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' blob: data:; connect-src https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap">
@@ -19,6 +20,9 @@
 <section id="sheet" class="sheet" role="dialog" aria-modal="true" aria-label="面板" hidden></section>
 <p id="toast" class="toast" role="status" hidden></p>
 
+<script src="src/local/ai.js"></script>
+<script src="src/local/db.js"></script>
+<script src="src/local/config.js"></script>
 <script src="src/profile.js"></script>
 <script src="src/core/logic.js"></script>
 <script src="src/core/ui.js"></script>

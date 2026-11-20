@@ -41,7 +41,7 @@
     },
 
     async start() {
-      const { $, sheet, toast } = root.UI;
+      const { $, sheet } = root.UI;
       const P = root.Profile;
       if (P) { $('fab').setAttribute('aria-label', P.text.addMeal); $('chat-fab').setAttribute('aria-label', P.text.askCoach); }
       $('tab-home').onclick = () => App.go('home');
@@ -52,11 +52,19 @@
       document.addEventListener('keydown', e => { if (e.key === 'Escape') sheet.close(); });
       document.addEventListener('visibilitychange', () => { if (!document.hidden) App.render(); });
       App.render();
-      const use = n => root.claude?.use ? root.claude.use(n).catch(() => null) : Promise.resolve(null);
-      const [db, user, sample] = await Promise.all([use('db'), use('user'), use('sample')]);
-      const uid = user ? await user.id().catch(() => null) : null;
-      root.Coach.init(sample);
-      root.Store.init(db, uid, { onData: App.onData, onError: msg => toast(msg, true) });
+      const db = root.LocalDB.create(localStorage);
+      App.db = db;   // 匯出／匯入用
+      App.reinitAI();
+      App.loadStore();
+    },
+
+    // 存完設定後重建 AI 轉接（Coach 遇到永久錯誤會把 sample 清掉）
+    reinitAI() {
+      root.Coach.init(root.LocalAI.create({ getConfig: () => root.Config.current(), fetch: (...a) => fetch(...a) }));
+    },
+    // 匯入備份後也用這個重新載入
+    loadStore() {
+      root.Store.init(App.db, 'local', { onData: App.onData, onError: msg => root.UI.toast(msg, true) });
     },
   };
 

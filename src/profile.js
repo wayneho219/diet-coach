@@ -5,12 +5,12 @@
     defaults: {},     // 用 store.js 的 DEFAULTS
     theme: null,      // 用 style.css 的玫瑰粉（有值的話，profile 載入時寫到 :root）
     text: {
-      addMeal: '記一餐', coachWord: '教練', streakIcon: '🔥', streakLabel: '連續達標', chatTitle: '教練', askCoach: '問教練',
+      addMeal: '記一餐', coachWord: '教練', streakIcon: '🔥', streakLabel: '連續達標', get chatTitle() { return root.Config?.get().coachName || '教練'; }, askCoach: '問教練',
       ringRemain: '還可以吃', ringOver: '已經超過', ringDone: null,
       status: { good: '剛好', over: '偏多', under: '偏少' },
     },
     coach: {
-      name: '教練', who: '使用者',
+      get name() { return root.Config?.get().coachName || '教練'; }, who: '使用者',
       get goal() { return root.Logic.goalOf(root.Store?.settings).word; },
       style: `- 用繁體中文，像朋友傳訊息聊天：口語、自然，長短跟著問題走。簡單的問題一兩句就回完，需要比較或列清單時才條列。
 - 不要每則都用同樣的開頭和結構，也不要套「結論、原理、建議」這種固定模板。粗體和 emoji 偶爾用就好。

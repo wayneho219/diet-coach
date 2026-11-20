@@ -6,6 +6,9 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 
 const CONTRACT = {
+  'src/local/ai.js': ['LocalAI', ['create', 'parseJson']],
+  'src/local/db.js': ['LocalDB', ['create']],
+  'src/local/config.js': ['Config', ['create']],
   'src/profile.js': ['Profile', []],
   'src/core/logic.js': ['Logic', ['normalizeMeal', 'mealTotals', 'validateEstimate', 'weekSeries', 'mergeFoods']],
   'src/core/ui.js': ['UI', ['$', 'el', 'svg', 'fmt', 'toast', 'sticker', 'confirmTap', 'dayLabel', 'typeChips', 'nutriRow', 'microLine', 'ring', 'toJpeg', 'rich']],
@@ -18,7 +21,7 @@ const CONTRACT = {
   'src/views/overview.js': ['Overview', ['render']],
   'src/views/calendar.js': ['Calendar', ['open']],
   'src/views/chat.js': ['Chat', ['open', 'refresh']],
-  'src/app.js': ['App', ['start', 'go', 'setDate', 'onData', 'render']],
+  'src/app.js': ['App', ['start', 'go', 'setDate', 'onData', 'render', 'reinitAI']],
 };
 
 for (const [file, [name, fns]] of Object.entries(CONTRACT)) {
@@ -37,6 +40,7 @@ for (const page of ['index.html']) {
   const html = fs.readFileSync(path.join(ROOT, page), 'utf8');
   const order = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map(m => m[1]);
   assert.deepStrictEqual(order, want, page);
+  for (const f of order) assert.ok(fs.existsSync(path.join(ROOT, f)), `${page} 引用的 ${f} 不存在`);
   assert.ok(html.includes('id="chat-fab"') && html.includes('href="style.css"'), page);
 }
 const ling = require('../src/profile.js');

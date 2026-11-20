@@ -15,11 +15,81 @@
     if (!root.Store.ready) { $('view-overview').replaceChildren(el('p', { class: 'empty' }, '載入中…')); return; }
     $('view-overview').replaceChildren(
       el('h1', { class: 'page-title' }, '概覽'),
-      planCard(today), insightCard(today),
+      settingsCard(), planCard(today), insightCard(today),
       chartCard('weight', today), chartCard('kcal', today), chartCard('exercise', today), chartCard('water', today),
       adviceCard(today));
   }
   const rerender = () => render({ today: root.App.today() });
+
+  // 「⚙️ AI 設定」：服務、金鑰、模型、教練名稱，加上備份匯出／匯入
+  const AI_ERR = {
+    bad_key: '金鑰無效或沒有權限，檢查一下金鑰。',
+    rate_limited: 'AI 的用量暫時到上限，等一下再試。',
+    not_granted: '還沒填金鑰。',
+  };
+  function settingsCard() {
+    const { el, toast, confirmTap } = root.UI, Cfg = root.Config, App = root.App, P = root.LocalAI.PROVIDERS;
+    const c = Cfg.get();
+    const provider = el('select', {}, Object.entries(P).map(([k, v]) => el('option', { value: k, selected: k === c.provider }, v.label)));
+    const key = el('input', { type: 'password', autocomplete: 'off', value: c.keys[c.provider], placeholder: '貼上 API 金鑰' });
+    const model = el('input', { type: 'text', autocomplete: 'off', value: c.model[c.provider] });
+    const name = el('input', { type: 'text', value: c.coachName });
+    // 切換服務時，金鑰和模型欄換成那家的值（沒按儲存的修改不保留）
+    provider.addEventListener('change', () => {
+      const g = Cfg.get();
+      key.value = g.keys[provider.value]; model.value = g.model[provider.value];
+    });
+    const save = () => {
+      const p = provider.value;
+      Cfg.save({ provider: p, keys: { [p]: key.value.trim() }, model: { [p]: model.value.trim() }, coachName: name.value.trim() });
+      App.reinitAI();
+    };
+    const test = async () => {
+      save();
+      try {
+        const ai = root.LocalAI.create({ getConfig: () => Cfg.current(), fetch: (...a) => fetch(...a) });
+        await ai('回覆 OK 兩個字');
+        toast('✓ 連線成功');
+      } catch (e) { toast(AI_ERR[e?.code] || '連不上，檢查網路或模型名稱。', true); }
+    };
+    const exportBackup = () => {
+      const blob = new Blob([JSON.stringify(App.db.exportAll())], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = el('a', { href: url, download: `diet-coach-${root.Logic.dayKey()}.json` });
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+    const file = el('input', { type: 'file', accept: 'application/json', hidden: true });
+    let pending = null;
+    const doImport = async () => {
+      try { await App.db.importAll(pending); App.loadStore(); toast('已匯入備份。'); }
+      catch (e) { toast(e?.code === 'invalid_backup' ? '這不是本 App 的備份檔。' : '匯入失敗，資料沒有變動。', true); }
+      pending = null;
+    };
+    const importBtn = confirmTap(el('button', { class: 'btn btn-soft', hidden: true }, '確定匯入（會取代目前所有紀錄）'), doImport, '再點一次確定，會取代所有紀錄');
+    file.addEventListener('change', async () => {
+      const f = file.files[0]; file.value = '';
+      if (!f) return;
+      try { pending = JSON.parse(await f.text()); } catch (_) { toast('這不是本 App 的備份檔。', true); return; }
+      importBtn.hidden = false;
+      toast('選好備份了。按下方按鈕會取代目前所有紀錄。');
+    });
+    const pickBtn = el('button', { class: 'btn btn-soft', onclick: () => file.click() }, '匯入備份');
+    return el('details', { class: 'card', open: !Cfg.hasKey() },
+      el('summary', { class: 'card-title' }, '⚙️ AI 設定'),
+      el('div', { class: 'grid2' },
+        el('label', { class: 'field' }, '服務', provider),
+        el('label', { class: 'field' }, '教練名稱', name),
+        el('label', { class: 'field' }, '金鑰', key),
+        el('label', { class: 'field' }, '模型', model),
+        el('button', { class: 'btn btn-primary', onclick: () => { save(); toast('設定已儲存。'); } }, '儲存'),
+        el('button', { class: 'btn btn-soft', onclick: test }, '測試連線'),
+        el('button', { class: 'btn btn-soft', onclick: exportBackup }, '匯出備份'),
+        pickBtn, file, importBtn),
+      el('p', { class: 'hint' }, '照片和文字會傳給你選的 AI 服務。'),
+      el('p', { class: 'hint' }, 'API 費用由你自己負擔。'),
+      el('p', { class: 'hint' }, 'iPhone 請用 Safari「加入主畫面」打開，資料才不會被清除。'));
+  }
 
   function planCard() {
     const { el, fmt, toast } = root.UI, Store = root.Store, L = root.Logic;
