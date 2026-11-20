@@ -7,7 +7,7 @@ const ROOT = path.join(__dirname, '..');
 
 const CONTRACT = {
   'src/local/ai.js': ['LocalAI', ['create', 'parseJson', 'listModels', 'pickModel', 'tiers']],
-  'src/local/db.js': ['LocalDB', ['create']],
+  'src/local/db.js': ['LocalDB', ['create', 'clearAll']],
   'src/local/config.js': ['Config', ['create']],
   'src/profile.js': ['Profile', []],
   'src/core/logic.js': ['Logic', ['normalizeMeal', 'mealTotals', 'validateEstimate', 'weekSeries', 'mergeFoods']],

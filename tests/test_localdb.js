@@ -99,5 +99,15 @@ const next = (ref) => new Promise((res, rej) => ref.onSnapshot(res, rej));
   await tick();
   assert.strictEqual(Store.settings.target, 1700);
 
+  // 重置：刪掉所有 diet-coach: 開頭的資料（含設定），其他 key 不動
+  {
+    const s3 = fakeStorage();
+    s3.setItem('diet-coach:data/users/local/settings', '{}');
+    s3.setItem('diet-coach:config', '{}');
+    s3.setItem('other-app:x', '1');
+    assert.strictEqual(LocalDB.clearAll(s3), 2);
+    assert.deepStrictEqual([...s3.m.keys()], ['other-app:x']);
+  }
+
   console.log('test_localdb: ok');
 })().catch(e => { console.error(e); process.exit(1); });

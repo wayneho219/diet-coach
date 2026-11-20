@@ -106,7 +106,15 @@
     };
   }
 
-  const LocalDB = { create };
+  // 刪掉所有 diet-coach: 開頭的 key（紀錄和設定都算），同網址下其他網站的資料不動
+  function clearAll(storage, prefix = 'diet-coach:') {
+    const keys = [];
+    for (let i = 0; i < storage.length; i++) { const k = storage.key(i); if (k && k.startsWith(prefix)) keys.push(k); }
+    keys.forEach(k => storage.removeItem(k));
+    return keys.length;
+  }
+
+  const LocalDB = { create, clearAll };
   root.LocalDB = LocalDB;
   if (typeof module !== 'undefined') module.exports = LocalDB;
 })(typeof window !== 'undefined' ? window : globalThis);

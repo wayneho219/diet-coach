@@ -124,6 +124,11 @@
       toast('選好備份了。按下方按鈕會取代目前所有紀錄。');
     });
     const pickBtn = el('button', { class: 'btn btn-soft', onclick: () => file.click() }, '匯入備份');
+    // 重置：清掉這個 App 在瀏覽器裡的所有資料（紀錄、設定、金鑰），回到第一次打開的狀態
+    const resetBtn = confirmTap(el('button', { class: 'btn btn-ghost', style: 'grid-column:1/-1' }, '重置 App（刪除所有資料）'), () => {
+      root.LocalDB.clearAll(localStorage);
+      location.reload();
+    }, '再點一次確定：紀錄、設定和金鑰都會刪掉');
     const det = el('details', { class: 'card', open: detailsOpen ?? false },
       el('summary', { class: 'card-title' }, '⚙️ AI 設定'),
       el('div', { class: 'grid2' },
@@ -134,10 +139,11 @@
         el('button', { class: 'btn btn-primary', onclick: () => { save(); toast('設定已儲存。'); } }, '儲存'),
         el('button', { class: 'btn btn-soft', onclick: test }, '測試連線'),
         el('button', { class: 'btn btn-soft', onclick: exportBackup }, '匯出備份'),
-        pickBtn, file, importBtn),
+        pickBtn, file, importBtn, resetBtn),
       el('p', { class: 'hint' }, '照片和文字會傳給你選的 AI 服務。'),
       el('p', { class: 'hint' }, 'API 費用由你自己負擔。'),
-      el('p', { class: 'hint' }, 'iPhone 請用 Safari「加入主畫面」打開，資料才不會被清除。'));
+      el('p', { class: 'hint' }, 'iPhone 請用 Safari「加入主畫面」打開，資料才不會被清除。'),
+      el('p', { class: 'hint' }, '重置前想留著紀錄的話，先按「匯出備份」。'));
     det.addEventListener('toggle', () => { detailsOpen = det.open; });
     return det;
   }
