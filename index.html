@@ -1,0 +1,49 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>飲食教練</title>
+<meta name="theme-color" content="#1B1618">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="飲食教練">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' blob: data:; connect-src https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap">
+<link rel="stylesheet" href="style.css?v=1.0.0">
+
+<p id="banner" class="banner" hidden>資料沒辦法存到這個瀏覽器。</p>
+<main id="view-home" class="view"><p class="empty">載入中…</p></main>
+<main id="view-overview" class="view" hidden></main>
+
+<nav class="tabbar" aria-label="主要">
+  <button id="tab-home" class="tab" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>首頁</button>
+  <button id="fab" class="fab" aria-label="記一餐">＋</button>
+  <button id="tab-overview" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-6 4 4 8-9"/></svg>概覽</button>
+</nav>
+<button id="chat-fab" class="chat-fab" aria-label="問教練">💬</button>
+
+<div id="sheet-backdrop" class="sheet-backdrop" hidden></div>
+<section id="sheet" class="sheet" role="dialog" aria-modal="true" aria-label="面板" hidden></section>
+<p id="toast" class="toast" role="status" hidden></p>
+
+<script src="src/local/ai.js?v=1.0.0"></script>
+<script src="src/local/db.js?v=1.0.0"></script>
+<script src="src/local/config.js?v=1.0.0"></script>
+<script src="src/profile.js?v=1.0.0"></script>
+<script src="src/core/logic.js?v=1.0.0"></script>
+<script src="src/core/ui.js?v=1.0.0"></script>
+<script src="src/core/charts.js?v=1.0.0"></script>
+<script src="src/core/store.js?v=1.0.0"></script>
+<script src="src/core/claude.js?v=1.0.0"></script>
+<script src="src/views/meal-editor.js?v=1.0.0"></script>
+<script src="src/views/home.js?v=1.0.0"></script>
+<script src="src/views/add.js?v=1.0.0"></script>
+<script src="src/views/overview.js?v=1.0.0"></script>
+<script src="src/views/calendar.js?v=1.0.0"></script>
+<script src="src/views/chat.js?v=1.0.0"></script>
+<script src="src/views/welcome.js?v=1.0.0"></script>
+<script src="src/app.js?v=1.0.0"></script>
