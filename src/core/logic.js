@@ -87,6 +87,9 @@
   // 有目標體重和目標日期時，用「要減／增多少 ÷ 剩幾週」算每日熱量差（1 kg ≈ 7,700 大卡）
   // 速度上限：減脂每週最多減體重的 1%、增重每週最多增 0.5%；增肌減脂不看目標體重
   // 回傳 { target, protein, weekly（kg／週，負數是減）, capped, weeksNeeded, error: 'direction'|null }
+  // 建議飲水：體重 × 35 ml，四捨五入到 100 ml
+  const waterTarget = weight => (weight > 0 ? Math.round(weight * 35 / 100) * 100 : null);
+
   const KCAL_PER_KG = 7700, MAX_RATE = { cut: 0.01, bulk: 0.005 };
   function weightPlan(td, s, weight, today = dayKey()) {
     const g = goalOf(s), protein = weight ? Math.round(weight * 1.6) : s.protein;
@@ -514,7 +517,7 @@
     return out;
   }
 
-  root.Logic = { GOALS, goalOf, MET, NUTRIENTS, dayKey, addDays, diffDays, bmr, tdee, exercise, customMet, leanMass, restingKcal, metFactor, usesSteps, macroTargets, macroState, dayAddBack, suggestTarget, clampTarget, weightPlan, totals, avg7, weekAdvice, lowIntake, defaultMealType,
+  root.Logic = { GOALS, goalOf, MET, NUTRIENTS, dayKey, addDays, diffDays, bmr, tdee, exercise, customMet, leanMass, restingKcal, metFactor, usesSteps, macroTargets, macroState, dayAddBack, suggestTarget, clampTarget, weightPlan, waterTarget, totals, avg7, weekAdvice, lowIntake, defaultMealType,
     normalizeMeal, itemStore, itemTime, mergeSameType, syncMealStore, groupItems, storeLabel, detectStores, mealTotals, mealEmoji, newMeal, setQty, updateItem, addItem, mergeIntoMeal, streak, weekStart, weekSeries, seriesAverage,
     recentItems, storesByRecent, isFavorite, toggleFavorite, favItems, detectStore, mergeFoods, validateEstimate, weekSummaryText, isStrength, strengthDays, exerciseText, MICROS, highSodiumDays, dayStatus, monthGrid, monthSummary,
     bodyCompText, CHAT_MAX, CHAT_TEXT_MAX, trimChat, todayDetailText, chatTurns, chatVisible, splitMeal };

@@ -61,7 +61,7 @@
       if (plan.error) { summary.textContent = '目標體重和目標方向對不上：減脂要比現在輕，增重要比現在重。'; return; }
       const wk = plan.weekly ? `，每週約 ${plan.weekly > 0 ? '+' : ''}${plan.weekly} kg` : '';
       const slow = plan.capped ? `。這個速度太快，已調整到安全範圍，大約要 ${plan.weeksNeeded} 週` : '';
-      summary.textContent = `每日總消耗約 ${fmt(td)} 大卡 → 建議每天吃 ${fmt(plan.target)} 大卡、蛋白質 ${plan.protein} g${wk}${slow}。`;
+      summary.textContent = `每日總消耗約 ${fmt(td)} 大卡 → 建議每天吃 ${fmt(plan.target)} 大卡、蛋白質 ${plan.protein} g、喝水 ${fmt(L.waterTarget(read().w))} ml${wk}${slow}。`;
     };
     for (const i of [sex, activity, goal, age, height, weight, targetWeight, weeks]) i.addEventListener('input', update);
     update();
@@ -71,7 +71,7 @@
       if (!(v.age > 0 && v.height > 0 && w > 0)) return toast('年齡、身高、體重都要填。', true);
       if (plan?.error) return toast('目標體重和目標方向對不上。', true);
       try {
-        await Store.saveSettings({ ...v, weight: w, target: plan.target, protein: plan.protein });
+        await Store.saveSettings({ ...v, weight: w, target: plan.target, protein: plan.protein, water: L.waterTarget(w) });
         await Store.updateDay(L.dayKey(), d => { d.weight = w; });
       } catch (_) { return; }   // Store 已經跳出提示
       aiStep(body);

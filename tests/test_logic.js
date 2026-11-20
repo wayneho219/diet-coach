@@ -507,3 +507,8 @@ console.log('weightPlan ok');
 assert.strictEqual(L.goalOf({ goal: 'bulk' }).ring.remain, '還需要吃');
 assert.strictEqual(L.goalOf({ goal: 'cut' }).ring.remain, '還可以吃');
 assert.strictEqual(L.goalOf({ goal: 'recomp' }).ring.remain, '還可以吃');
+// 建議飲水：體重 × 35 ml，四捨五入到 100
+assert.strictEqual(L.waterTarget(52), 1800);
+assert.strictEqual(L.waterTarget(80), 2800);
+assert.strictEqual(L.waterTarget(60), 2100);
+assert.strictEqual(L.waterTarget(null), null);

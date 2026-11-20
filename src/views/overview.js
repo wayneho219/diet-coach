@@ -171,7 +171,7 @@
         ['內臟脂肪', s.visceral ? `等級 ${s.visceral}` : null], ['InBody 日期', s.bodyDate || null]]),
       ...block('代謝參考', rmr ? [
         [s.bmrInBody ? '基礎代謝（InBody）' : s.bodyFat ? '基礎代謝（估）' : '基礎代謝', `${fmt(rmr)} 大卡`],
-        ['每日總消耗', `${fmt(td)} 大卡`], ['建議目標', `${fmt(plan.target)} 大卡`]] : []),
+        ['每日總消耗', `${fmt(td)} 大卡`], ['建議目標', `${fmt(plan.target)} 大卡`], ['建議飲水', `${fmt(L.waterTarget(weight))} ml`]] : []),
       plan?.error ? el('p', { class: 'hint' }, '目標體重和目標方向對不上：減脂要比現在輕，增重要比現在重。') : null,
       plan?.capped ? el('p', { class: 'hint' }, `照目標日期的速度太快，建議目標已調整到安全範圍，大約要 ${plan.weeksNeeded} 週。`) : null,
     ];
