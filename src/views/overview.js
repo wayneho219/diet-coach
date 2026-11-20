@@ -31,7 +31,7 @@
     const td = rmr ? Math.round(rmr * s.activity) : null;
     const view = [
       ...block('每日目標', [
-        ['熱量', `${fmt(s.target)} 大卡`], ['蛋白質', `${s.protein} g`], ['飲水', `${fmt(s.water)} ml`],
+        ['目標', L.goalOf(s).word], ['熱量', `${fmt(s.target)} 大卡`], ['蛋白質', `${s.protein} g`], ['飲水', `${fmt(s.water)} ml`],
         ['纖維', `${s.fiber} g`], ['鈉上限', `${fmt(s.sodium)} mg`], ['肌力訓練', `每週 ${s.strengthGoal} 次`]]),
       ...block('身體狀態', [
         ['身高', s.height ? `${s.height} cm` : null], ['年齡', s.age ? `${s.age} 歲` : null], ['體重', weight ? `${weight} kg` : null],
@@ -47,7 +47,11 @@
     const num = (k, label, extra = {}) => el('label', { class: 'field' }, label, inputs[k] = el('input', { type: 'number', inputmode: 'decimal', value: s[k] ?? '', ...extra }));
     inputs.activity = el('select', {}, [['1.2', '久坐（幾乎不運動）'], ['1.375', '輕度（每週 1–3 次）'], ['1.55', '中度（每週 3–5 次）'], ['1.725', '高度（每週 6–7 次）']]
       .map(([v, t]) => el('option', { value: v, selected: Number(v) === s.activity }, t)));
+    const pick = (opts, cur) => opts.map(([v, t]) => el('option', { value: v, selected: v === cur }, t));
+    inputs.goal = el('select', {}, pick(Object.values(L.GOALS).map(g => [g.key, g.word]), L.goalOf(s).key));
+    inputs.sex = el('select', {}, pick([['f', '女'], ['m', '男']], s.sex === 'm' ? 'm' : 'f'));
     const form = el('div', { class: 'grid2' },
+      el('label', { class: 'field' }, '目標', inputs.goal), el('label', { class: 'field' }, '性別', inputs.sex),
       num('height', '身高（cm）'), num('age', '年齡', { placeholder: '填了才能算代謝' }),
       el('label', { class: 'field', style: 'grid-column:1/-1' }, '平常活動量', inputs.activity),
       num('target', '熱量目標（大卡）'), num('protein', '蛋白質（g）'),
@@ -60,7 +64,7 @@
       el('label', { class: 'field' }, '量測日期', inputs.bodyDate = el('input', { type: 'date', value: s.bodyDate ?? '' })),
       el('button', { class: 'btn btn-primary', style: 'grid-column:1/-1', onclick: () => {
         const v = {};
-        for (const [k, input] of Object.entries(inputs)) v[k] = input.value === '' ? null : k === 'bodyDate' ? input.value : Number(input.value);
+        for (const [k, input] of Object.entries(inputs)) v[k] = input.value === '' ? null : ['bodyDate', 'goal', 'sex'].includes(k) ? input.value : Number(input.value);
         if (!(v.target >= 800 && v.protein > 0 && v.water > 0 && v.height > 0)) return toast('熱量（至少 800）、蛋白質、飲水和身高都要填。', true);
         const out = (x, lo, hi) => x != null && !(x >= lo && x <= hi);
         if (out(v.bodyFat, 3, 70) || out(v.smm, 5, 60) || out(v.visceral, 1, 30) || out(v.bmrInBody, 600, 3000) || out(v.bodyWeight, 30, 200)) return toast('體脂率 3–70、骨骼肌量 5–60、內臟脂肪等級 1–30、基礎代謝 600–3000、體重 30–200。', true);
@@ -74,7 +78,7 @@
         root.UI.sheet.close();
         Store.saveSettings(v).then(() => toast('計畫已儲存。')).catch(() => {});
       } }, '儲存計畫'),
-      s.goal === 'bulk' ? null : el('p', { class: 'hint', style: 'grid-column:1/-1' }, '熱量目標不建議低於 1,200 大卡。'));
+      L.goalOf(s).floorHint ? el('p', { class: 'hint', style: 'grid-column:1/-1' }, L.goalOf(s).floorHint) : null);
 
     const edit = () => root.UI.sheet.open(el('div', { class: 'sheet-body' }, el('h2', { class: 'sheet-title' }, '編輯計畫'), form));
     return el('section', { class: 'card' },
@@ -139,9 +143,7 @@
       el('h2', { class: 'card-title' }, `🧭 ${cw}建議`),
       el('p', { style: 'margin:0' }, adv.text),
       nt && nt !== s.target ? el('button', { class: 'btn btn-soft', onclick: () => Store.saveSettings({ target: nt }).then(() => toast('目標已更新。')).catch(() => {}) }, `把目標改成 ${fmt(nt)} 大卡`) : null,
-      L.lowIntake(Store.days, today, s) ? el('p', { class: 'warnbox' }, s.goal === 'bulk'
-        ? '最近三天都沒吃到目標的 85%。增肌要每天吃夠，今天先把蛋白質補滿。'
-        : '最近三天記錄的熱量都低於 1,200 大卡。吃太少容易掉肌肉，今天記得吃夠蛋白質和主食。') : null,
+      L.lowIntake(Store.days, today, s) ? el('p', { class: 'warnbox' }, L.goalOf(s).lowText) : null,
       salty ? el('p', { class: 'hint' }, `這週有 ${salty} 天鈉超過 ${fmt(s.sodium)} mg。吃得比較鹹的隔天，體重上升多半是水分，不是脂肪。`) : null);
   }
 

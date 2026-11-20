@@ -104,6 +104,12 @@ function fakeSample(jsonResult, { fail } = {}) {
     assert.ok(pre.includes(s), '前言少了 ' + s);
   for (const s of ['運動和飲食一樣重要', '肌力訓練', '多走路']) assert.ok(pre.includes(s), '前言少了運動規則 ' + s);
   assert.ok(!Coach.buildChatPreamble({ ...chatCtx, stores: {} }).includes('」記錄過的品項：'));
+  globalThis.Store = { settings: { goal: 'recomp' } };
+  try {
+    const pr = Coach.buildChatPreamble(chatCtx);
+    assert.ok(pr.includes('增肌減脂') && pr.includes('體重大致不變是正常的'));
+  } finally { delete globalThis.Store; }
+  assert.ok(!pre.includes('增肌減脂'));
   assert.ok(pre.includes('份量基準') && pre.includes('"portion"'));   // 聊天記餐也照同一套份量估法
 
   const mealJson = '{"mealType":"晚餐","store":"","summary":"好","items":[{"emoji":"🍱","name":"雞腿便當","qty":1,"kcal":780,"protein":35,"carbs":90,"fat":28,"fiber":4,"sodium":1500}]}';

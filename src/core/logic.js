@@ -1,4 +1,4 @@
-// 純計算邏輯（減脂 cut／增重 bulk 依 settings.goal）（index.html 與 test_logic.js 共用）
+// 純計算邏輯（減脂 cut／增肌減脂 recomp／增重 bulk 依 settings.goal）（index.html 與 test_logic.js 共用）
 (function (root) {
   // 常見運動的 MET 值
   const MET = { 散步: 3, 快走: 4.3, 慢跑: 7, 騎腳踏車: 5.8, 游泳: 6, 有氧舞蹈: 6.5, 重訓: 3.5, 瑜伽: 2.5 };
@@ -56,17 +56,30 @@
     carbs: Math.max(0, Math.round((s.target - s.protein * 4 - s.target * 0.3) / 4)),
   });
 
+  // 三種目標的參數表：建議目標 = TDEE + delta；floor 為目標下限（null 不設）
+  const LOW_CUT = '最近三天記錄的熱量都低於 1,200 大卡。吃太少容易掉肌肉，今天記得吃夠蛋白質和主食。';
+  const GOALS = {
+    cut: { key: 'cut', word: '減脂', delta: -300, floor: 1200, addBack: 0.5, warnOver: true, band: [0.85, 1.05], low: () => 1200,
+      lowText: LOW_CUT, floorHint: '熱量目標不建議低於 1,200 大卡。', limit: '- 不鼓勵每天低於 1,200 kcal 或任何極端節食。', ringBulk: false },
+    recomp: { key: 'recomp', word: '增肌減脂', delta: -100, floor: 1200, addBack: 0.5, warnOver: true, band: [0.9, 1.05], low: () => 1200,
+      lowText: LOW_CUT, floorHint: '熱量目標不建議低於 1,200 大卡。',
+      limit: '- 重點是重訓和吃夠蛋白質；體重大致不變是正常的，不要因為體重沒降就建議少吃。\n- 不鼓勵每天低於 1,200 kcal 或任何極端節食。', ringBulk: false },
+    bulk: { key: 'bulk', word: '增重', delta: 400, floor: null, addBack: 1, warnOver: false, band: [0.9, 1.15], low: s => s.target * 0.85,
+      lowText: '最近三天都沒吃到目標的 85%。增肌要每天吃夠，今天先把蛋白質補滿。', floorHint: null,
+      limit: '- 不鼓勵暴食或用高糖高油的垃圾食物硬塞熱量。', ringBulk: true },
+  };
+  const goalOf = s => GOALS[s?.goal] ?? GOALS.cut;
+
   // 蛋白質是下限：吃到就算達標；碳水、脂肪是上限：超過才警告（增重 bulk 不警告）
-  const macroState = (key, val, goal, mode = 'cut') => key === 'protein' ? (val >= goal ? 'good' : '') : (mode !== 'bulk' && val > goal ? 'over' : '');
+  const macroState = (key, val, goal, mode = 'cut') => key === 'protein' ? (val >= goal ? 'good' : '') : (goalOf({ goal: mode }).warnOver && val > goal ? 'over' : '');
 
   // 一天的加回：所有運動的淨消耗，減脂取一半、增重全部，再套每日上限
   const dayAddBack = (day, cap, goal = 'cut') =>
-    Math.min(Math.round((day?.exercise ?? []).reduce((a, e) => a + (Number(e.net) || 0), 0) / (goal === 'bulk' ? 1 : 2)), cap);
+    Math.min(Math.round((day?.exercise ?? []).reduce((a, e) => a + (Number(e.net) || 0), 0) * goalOf({ goal }).addBack), cap);
 
-  // 建議熱量目標：減脂 TDEE − 300（最低 1,200）；增重 TDEE + 400
-  const suggestTarget = (td, s) => s?.goal === 'bulk' ? td + 400 : Math.max(1200, td - 300);
-  // 套用調整後的目標：減脂不低於 1,200
-  const clampTarget = (kcal, s) => s?.goal === 'bulk' ? kcal : Math.max(1200, kcal);
+  // 建議熱量目標：TDEE + delta（有下限就不低於下限）
+  const clampTarget = (kcal, s) => { const { floor } = goalOf(s); return floor == null ? kcal : Math.max(floor, kcal); };
+  const suggestTarget = (td, s) => clampTarget(td + goalOf(s).delta, s);
 
   const NUTRIENTS = ['kcal', 'protein', 'carbs', 'fat'];
   const MICROS = ['fiber', 'sodium'];          // 選填：缺少時當作 0
@@ -163,6 +176,14 @@
   function weekAdvice(days, today, s = {}) {
     const [w0, w1, w2] = [0, 7, 14].map(n => avg7(days, addDays(today, -n)));
     if (w0 == null || w1 == null) return { level: 'info', text: '體重資料還不到兩週，先照目前的目標吃。' };
+    if (s.goal === 'recomp') {
+      const change = (w0 - w1) / w1, pct = (Math.abs(change) * 100).toFixed(1);
+      if (change < -0.005)
+        return { level: 'up', delta: 100, text: `這週 7 日平均降了 ${pct}%，增肌減脂不需要減這麼快，建議目標加 100 kcal。` };
+      if (change > 0.005)
+        return { level: 'down', delta: -100, text: `這週 7 日平均升了 ${pct}%，可能多長了脂肪，建議目標降 100 kcal。` };
+      return { level: 'ok', text: '體重穩定，維持目前目標，看腰圍和體脂的變化。' };
+    }
     if (s.goal === 'bulk') {
       const gain = w0 - w1;
       if (gain > 0.5)
@@ -181,10 +202,10 @@
     return { level: 'ok', text: `這週 7 日平均下降 ${(w1 - w0).toFixed(1)} kg，速度剛好，維持目前目標。` };
   }
 
-  // 今天以前、有記錄餐點的最近 3 天都吃太少：減脂低於 1,200 kcal；增重低於目標的 85%
+  // 今天以前、有記錄餐點的最近 3 天都吃太少：減脂／增肌減脂低於 1,200 kcal；增重低於目標的 85%
   function lowIntake(days, today, s = {}) {
     const logged = days.filter(d => d.date < today && d.meals?.length).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
-    const floor = s.goal === 'bulk' ? s.target * 0.85 : 1200;
+    const floor = goalOf(s).low(s);
     return logged.length === 3 && logged.every(d => totals(d).kcal < floor);
   }
 
@@ -448,7 +469,7 @@
   function dayStatus(day, s) {
     if (!day?.meals?.length) return { kcal: 'none', protein: false };
     const t = totals(day), ratio = t.kcal / (s.target + dayAddBack(day, s.cap, s.goal));
-    const [lo, hi] = s.goal === 'bulk' ? [0.9, 1.15] : [0.85, 1.05];
+    const [lo, hi] = goalOf(s).band;
     return { kcal: ratio < lo ? 'under' : ratio > hi ? 'over' : 'good', protein: t.protein >= s.protein };
   }
   // 月曆格：週一開始，前面補 null
@@ -468,7 +489,7 @@
     return out;
   }
 
-  root.Logic = { MET, NUTRIENTS, dayKey, addDays, diffDays, bmr, tdee, exercise, customMet, leanMass, restingKcal, metFactor, usesSteps, macroTargets, macroState, dayAddBack, suggestTarget, clampTarget, totals, avg7, weekAdvice, lowIntake, defaultMealType,
+  root.Logic = { GOALS, goalOf, MET, NUTRIENTS, dayKey, addDays, diffDays, bmr, tdee, exercise, customMet, leanMass, restingKcal, metFactor, usesSteps, macroTargets, macroState, dayAddBack, suggestTarget, clampTarget, totals, avg7, weekAdvice, lowIntake, defaultMealType,
     normalizeMeal, itemStore, itemTime, mergeSameType, syncMealStore, groupItems, storeLabel, detectStores, mealTotals, mealEmoji, newMeal, setQty, updateItem, addItem, mergeIntoMeal, streak, weekStart, weekSeries, seriesAverage,
     recentItems, storesByRecent, isFavorite, toggleFavorite, favItems, detectStore, mergeFoods, validateEstimate, weekSummaryText, isStrength, strengthDays, exerciseText, MICROS, highSodiumDays, dayStatus, monthGrid, monthSummary,
     bodyCompText, CHAT_MAX, CHAT_TEXT_MAX, trimChat, todayDetailText, chatTurns, chatVisible, splitMeal };

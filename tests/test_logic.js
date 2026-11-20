@@ -423,6 +423,28 @@ const blow = ['2026-10-14', '2026-10-13', '2026-10-12'].map(date => ({ date, ...
 assert.strictEqual(L.lowIntake(blow, t, B), true);                                             // < 1,870
 assert.strictEqual(L.lowIntake([...blow.slice(0, 2), { date: '2026-10-12', ...meal(1900) }], t, B), false);
 assert.strictEqual(L.lowIntake(blow, t), false);                                               // 減脂只看 1,200
+// 增肌減脂 recomp
+const R = { goal: 'recomp', target: 1900, protein: 100, cap: 300, water: 2000 };
+assert.strictEqual(L.goalOf({}).key, 'cut');
+assert.strictEqual(L.goalOf(undefined).key, 'cut');
+assert.strictEqual(L.goalOf({ goal: 'x' }).key, 'cut');
+assert.strictEqual(L.goalOf(R).word, '增肌減脂');
+assert.strictEqual(L.suggestTarget(2000, R), 1900);
+assert.strictEqual(L.suggestTarget(1250, R), 1200);           // 下限
+assert.strictEqual(L.clampTarget(1000, R), 1200);
+assert.strictEqual(L.dayAddBack({ exercise: [{ net: 200 }] }, 150, 'recomp'), 100);
+assert.strictEqual(L.macroState('fat', 80, 60, 'recomp'), 'over');
+assert.strictEqual(L.dayStatus(bm(1672), R).kcal, 'under');   // 88%
+assert.strictEqual(L.dayStatus(bm(1748), R).kcal, 'good');    // 92%
+{
+  const a1 = L.weekAdvice(days([[t, 59.6], ['2026-10-08', 60]]), t, R);     // -0.67%
+  assert.strictEqual(a1.delta, 100); assert.strictEqual(a1.level, 'up'); assert.ok(a1.text.includes('降了 0.7%'));
+  const a2 = L.weekAdvice(days([[t, 60.4], ['2026-10-08', 60]]), t, R);     // +0.67%
+  assert.strictEqual(a2.delta, -100); assert.strictEqual(a2.level, 'down'); assert.ok(a2.text.includes('升了 0.7%'));
+  const a3 = L.weekAdvice(days([[t, 60.1], ['2026-10-08', 60]]), t, R);     // +0.17%
+  assert.strictEqual(a3.delta, undefined); assert.strictEqual(a3.level, 'ok');
+}
+assert.strictEqual(L.lowIntake(['2026-10-14', '2026-10-13', '2026-10-12'].map(date => ({ date, ...meal(1100) })), t, R), true);
 console.log('ok');
 
 // 我的最愛：切換、營養以店家清單為準、不同店同名分開

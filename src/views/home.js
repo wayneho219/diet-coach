@@ -35,7 +35,7 @@
     const { el, fmt, ring } = root.UI;
     // 三大營養素的目標跟著加回後的熱量走，和大圓環同一個基準
     // 增重：吃到目標就算達標，超過 115% 才是超標
-    const bulk = s.goal === 'bulk', remain = target - t.kcal, over = bulk ? t.kcal > target * 1.15 : remain < 0;
+    const bulk = root.Logic.goalOf(s).ringBulk, remain = target - t.kcal, over = bulk ? t.kcal > target * 1.15 : remain < 0;
     const goal = root.Logic.macroTargets({ ...s, target });
     const label = over ? T().ringOver : bulk && remain <= 0 ? T().ringDone : T().ringRemain;
     const macro = (key, emoji, name, val) => {
