@@ -32,7 +32,8 @@
   function settingsCard() {
     const { el, toast, confirmTap } = root.UI, Cfg = root.Config, App = root.App, P = root.LocalAI.PROVIDERS;
     const c = Cfg.get();
-    if (!draft) draft = { provider: c.provider, key: c.keys[c.provider], model: c.model[c.provider], coachName: c.coachName, typed: {} };
+    const seed = g => ({ provider: g.provider, key: g.keys[g.provider], model: g.model[g.provider], coachName: g.coachName, typed: {} });
+    if (!draft) draft = seed(c);
     const provider = el('select', {}, Object.entries(P).map(([k, v]) => el('option', { value: k, selected: k === draft.provider }, v.label)));
     const key = el('input', { type: 'password', autocomplete: 'off', value: draft.key, placeholder: '貼上 API 金鑰' });
     const model = el('input', { type: 'text', autocomplete: 'off', value: draft.model });
@@ -42,7 +43,8 @@
       draft.provider = provider.value; draft.key = key.value; draft.model = model.value; draft.coachName = name.value;
       draft.typed[draft.provider] = { key: key.value, model: model.value };
     };
-    [key, model, name].forEach(i => i.addEventListener('input', sync));
+    [key, model].forEach(i => i.addEventListener('input', sync));
+    name.addEventListener('input', () => { draft.coachName = name.value; });
     provider.addEventListener('change', () => {
       const g = Cfg.get(), p = provider.value, t = draft.typed[p];
       key.value = t ? t.key : g.keys[p]; model.value = t ? t.model : g.model[p];
@@ -52,7 +54,7 @@
       const p = provider.value;
       Cfg.save({ provider: p, keys: { [p]: key.value.trim() }, model: { [p]: model.value.trim() }, coachName: name.value.trim() });
       App.reinitAI();
-      draft = null;
+      draft = seed(Cfg.get());   // 卡片還在畫面上，事件處理器要有新的草稿可讀
     };
     const test = async () => {
       save();
