@@ -503,3 +503,7 @@ console.log('ok');
   assert.strictEqual(L.weightPlan(2000, { goal: 'recomp' }, 60, today).weekly, null);
 }
 console.log('weightPlan ok');
+// 首頁圓環用詞跟著目標走
+assert.strictEqual(L.goalOf({ goal: 'bulk' }).ring.remain, '還需要吃');
+assert.strictEqual(L.goalOf({ goal: 'cut' }).ring.remain, '還可以吃');
+assert.strictEqual(L.goalOf({ goal: 'recomp' }).ring.remain, '還可以吃');

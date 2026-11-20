@@ -37,7 +37,8 @@
     // 增重：吃到目標就算達標，超過 115% 才是超標
     const bulk = root.Logic.goalOf(s).ringBulk, remain = target - t.kcal, over = bulk ? t.kcal > target * 1.15 : remain < 0;
     const goal = root.Logic.macroTargets({ ...s, target });
-    const label = over ? T().ringOver : bulk && remain <= 0 ? T().ringDone : T().ringRemain;
+    const R = root.Logic.goalOf(s).ring;
+    const label = over ? R.over : bulk && remain <= 0 ? R.done : R.remain;
     const macro = (key, emoji, name, val) => {
       const state = root.Logic.macroState(key, val, goal[key], s.goal);
       return el('div', { class: 'macro' },

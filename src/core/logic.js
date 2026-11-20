@@ -57,16 +57,19 @@
   });
 
   // 三種目標的參數表：建議目標 = TDEE + delta；floor 為目標下限（null 不設）
+  // 首頁大圓環的標題：減脂看「還可以吃多少」，增重看「還需要吃多少」
+  const RING_CUT = { remain: '還可以吃', done: '還可以吃', over: '已經超過' };
   const LOW_CUT = '最近三天記錄的熱量都低於 1,200 大卡。吃太少容易掉肌肉，今天記得吃夠蛋白質和主食。';
   const GOALS = {
     cut: { key: 'cut', word: '減脂', delta: -300, floor: 1200, addBack: 0.5, warnOver: true, band: [0.85, 1.05], low: () => 1200,
-      lowText: LOW_CUT, floorHint: '熱量目標不建議低於 1,200 大卡。', limit: '- 不鼓勵每天低於 1,200 kcal 或任何極端節食。', ringBulk: false },
+      lowText: LOW_CUT, floorHint: '熱量目標不建議低於 1,200 大卡。', limit: '- 不鼓勵每天低於 1,200 kcal 或任何極端節食。', ringBulk: false, ring: RING_CUT },
     recomp: { key: 'recomp', word: '增肌減脂', delta: -100, floor: 1200, addBack: 0.5, warnOver: true, band: [0.9, 1.05], low: () => 1200,
       lowText: LOW_CUT, floorHint: '熱量目標不建議低於 1,200 大卡。',
-      limit: '- 重點是重訓和吃夠蛋白質；體重大致不變是正常的，不要因為體重沒降就建議少吃。\n- 不鼓勵每天低於 1,200 kcal 或任何極端節食。', ringBulk: false },
+      limit: '- 重點是重訓和吃夠蛋白質；體重大致不變是正常的，不要因為體重沒降就建議少吃。\n- 不鼓勵每天低於 1,200 kcal 或任何極端節食。', ringBulk: false, ring: RING_CUT },
     bulk: { key: 'bulk', word: '增重', delta: 400, floor: null, addBack: 1, warnOver: false, band: [0.9, 1.15], low: s => s.target * 0.85,
       lowText: '最近三天都沒吃到目標的 85%。增肌要每天吃夠，今天先把蛋白質補滿。', floorHint: null,
-      limit: '- 不鼓勵暴食或用高糖高油的垃圾食物硬塞熱量。', ringBulk: true },
+      limit: '- 不鼓勵暴食或用高糖高油的垃圾食物硬塞熱量。', ringBulk: true,
+      ring: { remain: '還需要吃', done: '已達標，多吃了', over: '超過目標太多' } },
   };
   const goalOf = s => GOALS[s?.goal] ?? GOALS.cut;
 

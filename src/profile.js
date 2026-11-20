@@ -6,7 +6,6 @@
     theme: null,      // 用 style.css 的玫瑰粉（有值的話，profile 載入時寫到 :root）
     text: {
       addMeal: '記一餐', coachWord: '教練', streakIcon: '🔥', streakLabel: '連續達標', get chatTitle() { return root.Config?.get().coachName || '教練'; }, askCoach: '問教練',
-      ringRemain: '還可以吃', ringOver: '已經超過', ringDone: null,
       status: { good: '剛好', over: '偏多', under: '偏少' },
     },
     coach: {
