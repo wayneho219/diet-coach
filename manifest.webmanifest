@@ -1,0 +1,16 @@
+{
+  "name": "飲食教練",
+  "short_name": "飲食教練",
+  "description": "拍照或打字記一餐，自帶 AI 金鑰的飲食記錄與營養教練。",
+  "lang": "zh-TW",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1B1618",
+  "theme_color": "#1B1618",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

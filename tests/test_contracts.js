@@ -59,11 +59,20 @@ assert.strictEqual(globalThis.UI.dayLabel('2026-10-15'), '10月15日 週四');
 const want = Object.keys(CONTRACT);
 for (const page of ['index.html']) {
   const html = fs.readFileSync(path.join(ROOT, page), 'utf8');
-  const order = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map(m => m[1]);
+  // 每個 script 和 style.css 都帶同一個 ?v= 版本號，發布新版時瀏覽器才會重新抓
+  const srcs = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map(m => m[1]);
+  const vers = new Set([...srcs, html.match(/href="(style\.css[^"]*)"/)[1]].map(u => u.split('?v=')[1]));
+  assert.strictEqual(vers.size, 1, page + ' 的版本號不一致：' + [...vers]);
+  assert.ok([...vers][0], page + ' 缺版本號');
+  const order = srcs.map(u => u.split('?')[0]);
   assert.deepStrictEqual(order, want, page);
   for (const f of order) assert.ok(fs.existsSync(path.join(ROOT, f)), `${page} 引用的 ${f} 不存在`);
   assert.ok(/^<!doctype html>/i.test(html) && html.includes('<meta charset="utf-8">') && html.includes('<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'), page + ' 缺 doctype／charset／viewport');
-  assert.ok(html.includes('id="chat-fab"') && html.includes('href="style.css"'), page);
+  assert.ok(html.includes('id="chat-fab"'), page);
+  // PWA：manifest 和圖示都要存在
+  const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, html.match(/rel="manifest" href="([^"]+)"/)[1]), 'utf8'));
+  for (const icon of manifest.icons) assert.ok(fs.existsSync(path.join(ROOT, icon.src)), `manifest 的 ${icon.src} 不存在`);
+  assert.ok(fs.existsSync(path.join(ROOT, html.match(/rel="apple-touch-icon" href="([^"]+)"/)[1])), 'apple-touch-icon 不存在');
 }
 const ling = require('../src/profile.js');
 globalThis.Profile = ling;

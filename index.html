@@ -2,11 +2,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>飲食教練</title>
+<meta name="theme-color" content="#1B1618">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="飲食教練">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' blob: data:; connect-src https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=1.0.0">
 
 <p id="banner" class="banner" hidden>資料沒辦法存到這個瀏覽器。</p>
 <main id="view-home" class="view"><p class="empty">載入中…</p></main>
@@ -23,20 +30,20 @@
 <section id="sheet" class="sheet" role="dialog" aria-modal="true" aria-label="面板" hidden></section>
 <p id="toast" class="toast" role="status" hidden></p>
 
-<script src="src/local/ai.js"></script>
-<script src="src/local/db.js"></script>
-<script src="src/local/config.js"></script>
-<script src="src/profile.js"></script>
-<script src="src/core/logic.js"></script>
-<script src="src/core/ui.js"></script>
-<script src="src/core/charts.js"></script>
-<script src="src/core/store.js"></script>
-<script src="src/core/claude.js"></script>
-<script src="src/views/meal-editor.js"></script>
-<script src="src/views/home.js"></script>
-<script src="src/views/add.js"></script>
-<script src="src/views/overview.js"></script>
-<script src="src/views/calendar.js"></script>
-<script src="src/views/chat.js"></script>
-<script src="src/views/welcome.js"></script>
-<script src="src/app.js"></script>
+<script src="src/local/ai.js?v=1.0.0"></script>
+<script src="src/local/db.js?v=1.0.0"></script>
+<script src="src/local/config.js?v=1.0.0"></script>
+<script src="src/profile.js?v=1.0.0"></script>
+<script src="src/core/logic.js?v=1.0.0"></script>
+<script src="src/core/ui.js?v=1.0.0"></script>
+<script src="src/core/charts.js?v=1.0.0"></script>
+<script src="src/core/store.js?v=1.0.0"></script>
+<script src="src/core/claude.js?v=1.0.0"></script>
+<script src="src/views/meal-editor.js?v=1.0.0"></script>
+<script src="src/views/home.js?v=1.0.0"></script>
+<script src="src/views/add.js?v=1.0.0"></script>
+<script src="src/views/overview.js?v=1.0.0"></script>
+<script src="src/views/calendar.js?v=1.0.0"></script>
+<script src="src/views/chat.js?v=1.0.0"></script>
+<script src="src/views/welcome.js?v=1.0.0"></script>
+<script src="src/app.js?v=1.0.0"></script>
