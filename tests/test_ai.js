@@ -144,10 +144,21 @@ const stops = { anthropic: ['end_turn', 'max_tokens'], openai: ['stop', 'length'
     await rejects(LocalAI.listModels({ provider: 'gemini', key: 'K' }, json(401, {})), 'bad_key');
     await LocalAI.listModels({ provider: 'gemini', key: 'K' }, () => { throw new TypeError('x'); })
       .then(() => assert.fail('should reject'), e => assert.deepStrictEqual(e, { code: 'upstream_error', network: true }));
-    // 選模型：在清單裡就留著，不在就換第一個，清單空的就不動
-    assert.strictEqual(LocalAI.pickModel(['a', 'b'], 'b'), 'b');
-    assert.strictEqual(LocalAI.pickModel(['a', 'b'], 'gone'), 'a');
-    assert.strictEqual(LocalAI.pickModel([], 'x'), 'x');
+    // 強／中／快：每檔取最新的正式版，沒有正式版才用預覽版
+    const gIds = ['gemini-3.1-pro-preview', 'gemini-3.0-pro', 'gemini-3.0-flash-lite', 'gemini-3.0-flash', 'gemini-2.5-pro', 'gemini-2.5-flash', 'gemma-3-27b'];
+    assert.deepStrictEqual(LocalAI.tiers('gemini', gIds), [
+      { label: '強', id: 'gemini-3.0-pro' }, { label: '中', id: 'gemini-3.0-flash' }, { label: '快', id: 'gemini-3.0-flash-lite' }]);
+    assert.deepStrictEqual(LocalAI.tiers('gemini', ['gemini-9-pro-preview', 'gemini-9-flash']).map(t => t.id), ['gemini-9-pro-preview', 'gemini-9-flash']);
+    assert.deepStrictEqual(LocalAI.tiers('openai', ['gpt-7-nano', 'gpt-7-mini', 'gpt-7', 'gpt-7-2027-01-01', 'gpt-6', 'o9']), [
+      { label: '強', id: 'gpt-7' }, { label: '中', id: 'gpt-7-mini' }, { label: '快', id: 'gpt-7-nano' }]);
+    assert.deepStrictEqual(LocalAI.tiers('anthropic', ['claude-sonnet-9', 'claude-opus-9', 'claude-haiku-8', 'claude-sonnet-8']), [
+      { label: '強', id: 'claude-opus-9' }, { label: '中', id: 'claude-sonnet-9' }, { label: '快', id: 'claude-haiku-8' }]);
+    assert.deepStrictEqual(LocalAI.tiers('gemini', ['gemma-3']), []);
+    // 選模型：在清單裡就留著，不在就換「中」檔，沒有就第一個，清單空的就不動
+    assert.strictEqual(LocalAI.pickModel(['a', 'b'], 'b', 'gemini'), 'b');
+    assert.strictEqual(LocalAI.pickModel(gIds, 'gone', 'gemini'), 'gemini-3.0-flash');
+    assert.strictEqual(LocalAI.pickModel(['a', 'b'], 'gone', 'gemini'), 'a');
+    assert.strictEqual(LocalAI.pickModel([], 'x', 'gemini'), 'x');
   }
   t = mk(cfg, () => { throw new TypeError('fail'); });
   await rejects(t.sample('hi'), 'upstream_error');

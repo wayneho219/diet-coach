@@ -26,7 +26,8 @@
   let draft = null, detailsOpen = null;
   // 查過的模型清單，key 是「服務|金鑰」：{ ids } 或 { error }；只放記憶體，重新整理頁面才會再查
   const modelLists = {};
-  const CUSTOM = '__custom__';
+  const CUSTOM = '__custom__', ALL = '__all__';
+  let showAll = false;   // 使用者按過「顯示全部模型」
   function settingsCard() {
     const { el, toast, confirmTap } = root.UI, Cfg = root.Config, App = root.App, P = root.LocalAI.PROVIDERS;
     const c = Cfg.get();
@@ -43,8 +44,13 @@
       const k = key.value.trim(), entry = modelLists[provider.value + '|' + k];
       modelHint.textContent = !k ? '' : !entry || entry.loading ? '載入模型清單中…' : entry.error ? '查不到模型清單：' + root.Welcome.errorText(entry.error) : '';
       if (!entry?.ids?.length) { modelSel.hidden = true; model.hidden = false; return; }
+      // 平常只列強／中／快三檔；選了「顯示全部」或目前的模型不在三檔裡，才列完整清單
+      const tiers = root.LocalAI.tiers(provider.value, entry.ids);
       const inList = entry.ids.includes(model.value);
-      modelSel.replaceChildren(...entry.ids.map(id => el('option', { value: id, selected: id === model.value }, id)),
+      const full = showAll || !tiers.length || (inList && !tiers.some(t => t.id === model.value));
+      const opts = full ? entry.ids.map(id => [id, id]) : tiers.map(t => [t.id, `${t.label}｜${t.id}`]);
+      modelSel.replaceChildren(...opts.map(([v, text]) => el('option', { value: v, selected: v === model.value }, text)),
+        full ? null : el('option', { value: ALL }, '顯示全部模型…'),
         el('option', { value: CUSTOM, selected: !inList }, '自訂…'));
       modelSel.hidden = false; model.hidden = inList;
     };
@@ -64,6 +70,7 @@
       }, 500);
     };
     modelSel.addEventListener('change', () => {
+      if (modelSel.value === ALL) { showAll = true; showModels(); return; }
       if (modelSel.value === CUSTOM) { model.hidden = false; model.focus(); }
       else { model.value = modelSel.value; model.hidden = true; }
       sync();

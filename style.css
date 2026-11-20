@@ -77,7 +77,7 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .field { display: grid; gap: 4px; font-size: .88rem; color: var(--muted); min-width: 0; }
 .field input, .field select, .field textarea { color: var(--ink); }
-input[type="text"], input[type="number"], select, textarea { width: 100%; box-sizing: border-box; border: 1.5px solid var(--line); background: var(--card); border-radius: 12px; padding: 10px 12px; font-size: 17px; min-height: 44px; }
+input[type="text"], input[type="number"], input[type="password"], input[type="date"], select, textarea { width: 100%; box-sizing: border-box; border: 1.5px solid var(--line); background: var(--card); border-radius: 12px; padding: 10px 12px; font-size: 17px; min-height: 44px; }
 textarea { resize: vertical; min-height: 4em; }
 .chips { display: flex; gap: 8px; flex-wrap: wrap; }
 .chip { border: 1.5px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 14px; min-height: 44px; font-weight: 600; }

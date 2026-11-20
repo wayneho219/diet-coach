@@ -6,7 +6,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 
 const CONTRACT = {
-  'src/local/ai.js': ['LocalAI', ['create', 'parseJson', 'listModels', 'pickModel']],
+  'src/local/ai.js': ['LocalAI', ['create', 'parseJson', 'listModels', 'pickModel', 'tiers']],
   'src/local/db.js': ['LocalDB', ['create']],
   'src/local/config.js': ['Config', ['create']],
   'src/profile.js': ['Profile', []],

@@ -129,8 +129,32 @@
     if (!res.ok) await httpError(res);
     return L.ids(await res.json());
   }
-  // 目前的模型在清單裡就留著，不在（例如預設名稱已下架）就換成清單第一個
-  const pickModel = (ids, current) => (ids.includes(current) || !ids.length ? current : ids[0]);
+  // 強／中／快三檔：每檔先找正式版名稱（strict），找不到才放寬到預覽版（loose）；清單已是新到舊，取第一個符合的
+  // ponytail: 純靠名稱判斷，服務商改命名規則就要更新這張表；選單裡永遠有「顯示全部」可以退回
+  const TIERS = {
+    anthropic: [['強', /opus/, /opus/], ['中', /sonnet/, /sonnet/], ['快', /haiku/, /haiku/]],
+    openai: [
+      ['強', /^gpt-\d+(\.\d+)?$/, /^gpt-\d(?!.*(mini|nano))/],
+      ['中', /^gpt-\d+(\.\d+)?-mini$/, /^gpt-\d.*mini/],
+      ['快', /^gpt-\d+(\.\d+)?-nano$/, /^gpt-\d.*nano/]],
+    gemini: [
+      ['強', /^gemini-[\d.]+-pro$/, /^gemini-.*-pro/],
+      ['中', /^gemini-[\d.]+-flash$/, /^gemini-.*-flash(?!-lite)/],
+      ['快', /^gemini-[\d.]+-flash-lite$/, /^gemini-.*-flash-lite/]],
+  };
+  function tiers(provider, ids) {
+    const out = [];
+    for (const [label, strict, loose] of TIERS[provider] || []) {
+      const id = ids.find(i => strict.test(i)) || ids.find(i => loose.test(i));
+      if (id && !out.some(t => t.id === id)) out.push({ label, id });
+    }
+    return out;
+  }
+  // 目前的模型在清單裡就留著；不在（例如預設名稱已下架）就換成「中」檔，沒有就清單第一個
+  const pickModel = (ids, current, provider) => {
+    if (ids.includes(current) || !ids.length) return current;
+    return tiers(provider, ids).find(t => t.label === '中')?.id || ids[0];
+  };
 
   function parseJson(text) {
     try { return JSON.parse(text); } catch (_) { /* 往下容錯 */ }
@@ -194,7 +218,7 @@
     return sample;
   }
 
-  const LocalAI = { PROVIDERS, create, parseJson, listModels, pickModel };
+  const LocalAI = { PROVIDERS, create, parseJson, listModels, pickModel, tiers };
   root.LocalAI = LocalAI;
   if (typeof module !== 'undefined') module.exports = LocalAI;
 })(typeof window !== 'undefined' ? window : globalThis);
