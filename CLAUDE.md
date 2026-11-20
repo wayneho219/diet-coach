@@ -8,13 +8,13 @@
 - `src/profile.js`：預設版介面用詞與教練人設
 - `src/local/`：`ai.js`（LocalAI，三家 AI 服務轉接）、`db.js`（localStorage 資料庫替身）、`config.js`（服務／金鑰／模型／教練名稱）
 - `src/core/`：`logic.js`（純邏輯）、`ui.js`、`charts.js`、`store.js`、`claude.js`
-- `src/views/`：`meal-editor.js`、`home.js`、`add.js`、`overview.js`、`calendar.js`、`chat.js`
+- `src/views/`：`meal-editor.js`、`home.js`、`add.js`、`overview.js`、`calendar.js`、`chat.js`、`welcome.js`（第一次使用的 AI 設定）
 - `src/app.js`：啟動
 - `tests/test_*.js`、`docs/`（spec 與計畫）
 
 ## 載入順序
 
-見 `index.html`：`local/ai` → `local/db` → `local/config` → `profile` → `core/logic` → `core/ui` → `core/charts` → `core/store` → `core/claude` → `views/*`（meal-editor、home、add、overview、calendar、chat）→ `app`。全域物件掛在 `window`（node 測試時用 `module.exports`）。
+見 `index.html`：`local/ai` → `local/db` → `local/config` → `profile` → `core/logic` → `core/ui` → `core/charts` → `core/store` → `core/claude` → `views/*`（meal-editor、home、add、overview、calendar、chat、welcome）→ `app`。全域物件掛在 `window`（node 測試時用 `module.exports`）。
 
 ## 測試
 
