@@ -85,10 +85,19 @@
           && Object.entries(obj.docs).every(([k, v]) => k.startsWith('data/') && v && typeof v === 'object' && !Array.isArray(v));
         if (!ok) throw { code: 'invalid_backup' };
         const entries = Object.entries(obj.docs);
-        const old = entries.map(([k]) => [k, storage.getItem(prefix + k)]);
-        try { entries.forEach(([k, v]) => write(k, v)); }
-        catch (e) {   // 寫到一半滿了：還原已寫入的部分
-          old.forEach(([k, raw]) => { try { raw === null ? storage.removeItem(prefix + k) : storage.setItem(prefix + k, raw); } catch (_) {} });
+        const head = prefix + 'data/';
+        // 先記下所有舊的 data/ 資料（不含 config），失敗時整批還原
+        const old = [];
+        for (let i = 0; i < storage.length; i++) {
+          const k = storage.key(i);
+          if (k && k.startsWith(head)) old.push([k, storage.getItem(k)]);
+        }
+        try {
+          old.forEach(([k]) => storage.removeItem(k));
+          entries.forEach(([k, v]) => write(k, v));
+        } catch (e) {
+          entries.forEach(([k]) => { try { storage.removeItem(prefix + k); } catch (_) {} });
+          old.forEach(([k, raw]) => { try { storage.setItem(k, raw); } catch (_) {} });
           throw e;
         }
         notify(null);

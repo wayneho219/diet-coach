@@ -64,6 +64,15 @@ const next = (ref) => new Promise((res, rej) => ref.onSnapshot(res, rej));
   assert.deepStrictEqual(db2.exportAll(), dump);
   assert.strictEqual(st2.getItem('diet-coach:config'), null);
 
+  // importAll 會清掉舊的 data/，但保留 config
+  st2.setItem('diet-coach:config', 'keep');
+  st2.setItem('diet-coach:data/users/local/extra', '{"x":1}');
+  await db2.importAll(dump);
+  assert.strictEqual(st2.getItem('diet-coach:data/users/local/extra'), null);
+  assert.strictEqual(st2.getItem('diet-coach:config'), 'keep');
+  assert.deepStrictEqual(db2.exportAll(), dump);
+  st2.removeItem('diet-coach:config');
+
   // 驗證失敗不改資料
   const before = JSON.stringify(db2.exportAll());
   for (const bad of [{ app: 'other', version: 1, docs: {} }, { app: 'diet-coach', version: 2, docs: {} }, null, { app: 'diet-coach', version: 1, docs: { 'data/x/y': 'str' } }]) {
